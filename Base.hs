@@ -1,7 +1,8 @@
-module BaseParse where
+module Base where
 
 import Data.Maybe
 import Data.Text.Internal.Builder.Int.Digits (digits)
+import Text.Read (readMaybe)
 
 newtype Parser t = Parser {runParser :: String -> Maybe (String, t)}
 
@@ -49,7 +50,7 @@ stringify p = Parser f
       out@(Just (rem, parsed)) -> Just (rem, [parsed])
       Nothing -> Nothing
 
-greedify :: Parser a -> Parser [a] -- NOTICE: will also return the empty list. Creates a list parser that takes in until the given parser fails.
+greedify :: Parser a -> Parser [a] -- NOTICE: will also return the empty list. Creates a list parser that takes in until the given parser fails. Collects outputs in a list. This also applies to Char -> [Char]::String
 greedify p = Parser f
   where
     f = f' []
@@ -73,19 +74,21 @@ greedifyStr p = Parser f
           where
             nextParse = runParser p remains
 
-
-obligatoryStr :: Parser String -> Parser String -- makes a string parser fail when returning the empty string
-obligatoryStr p = Parser f
+obligatoryListContent :: Parser [a] -> Parser [a] -- makes a list parser fail when returning the empty string
+obligatoryListContent p = Parser f
   where
     f input = case runParser p input of
       out@(Just (rem, parsed)) ->
         case parsed of
-          "" -> Nothing
+          [] -> Nothing
           _ -> out
       Nothing -> Nothing
 
-oblGreedify :: Parser Char -> Parser String
-oblGreedify = obligatoryStr . greedify
+oblGreedify :: Parser a -> Parser [a]
+oblGreedify = obligatoryListContent . greedify
+
+oblGreedifyStr :: Parser String -> Parser String
+oblGreedifyStr = obligatoryListContent . greedifyStr
 
 repeatStr :: Integral a => a -> Parser String -> Parser String -- chains together the same string parser n times
 repeatStr 1 p = p
@@ -170,63 +173,3 @@ pa ++* pb = Parser f
           Just (rem_b, parsed_b) -> Just (rem_b, parsed_a ++ [parsed_b])
           Nothing -> Nothing
       Nothing -> Nothing
-
---------------------
--- actual parsers --
---------------------
-
-end :: Parser () -- fails if string is not empty, returns unit
-end = Parser f
-  where
-    f "" = Just ("", ())
-    f _ = Nothing
-
-whitespaceCharParser :: Parser Char
-whitespaceCharParser = multiCharP [' ', '\t', '\n', '\r', '\v', '\f']
-
-wsParser :: Parser String
-wsParser = oblGreedify whitespaceCharParser
-
-minAlphaCharParser :: Parser Char
-minAlphaCharParser = multiCharP ['a' .. 'z']
-
-capAlphaCharParser :: Parser Char
-capAlphaCharParser = multiCharP ['A' .. 'Z']
-
-alphaCharParser :: Parser Char
-alphaCharParser = capAlphaCharParser ||| minAlphaCharParser
-
-digitCharParser :: Parser Char
-digitCharParser = multiCharP ['0' .. '9']
-
-digitsParser :: Parser String
-digitsParser = oblGreedify digitCharParser
-
-intParser :: Parser Int
-intParser = Parser f
-  where
-    f i = case runParser digitsParser i of
-      Just (rem, parsed) -> Just (rem, read parsed :: Int)
-      Nothing -> Nothing
-
-floatParser :: Parser Float
-floatParser = Parser f
-  where
-    prepareParser :: Parser String
-    prepareParser = digitsParser ++* charP '.' +++ digitsParser
-
-    f i = case runParser prepareParser i of
-      Just (rem, parsed) -> Just (rem, read parsed :: Float)
-      Nothing -> Nothing
-
-alphaNumCharParser :: Parser Char
-alphaNumCharParser = alphaCharParser ||| digitCharParser
-
-doubleQuotedStringParser :: Parser String
-doubleQuotedStringParser = charP '"' *++ greedify (notCharP '"') ++* charP '"' -- NOTICE: does not work with escapes yet.
-
-singleQuotedStringParser :: Parser String
-singleQuotedStringParser = charP '\'' *++ greedify (notCharP '\'') ++* charP '\'' -- NOTICE: does not work with escapes yet.
-
-quotedStringParser :: Parser String
-quotedStringParser = doubleQuotedStringParser ||| singleQuotedStringParser
