@@ -62,6 +62,19 @@ greedify p = Parser f
           where
             nextParse = runParser p remains
 
+greedifyStr :: Parser String -> Parser String -- NOTICE: will also return the empty string. Creates a string parser that takes in a string until the given char parser fails.
+greedifyStr p = Parser f
+  where
+    f = f' ""
+      where
+        f' :: String -> String -> Maybe (String, String)
+        f' buf remains
+          | isNothing nextParse = Just (remains, buf) -- reverse so we can append the characters at the head of the buf string -> should improve performance for big strings
+          | otherwise =
+              let Just (newRemains, parsedChar) = nextParse in f' (buf++parsedChar) newRemains
+          where
+            nextParse = runParser p remains
+
 obligatoryStr :: Parser String -> Parser String -- makes a string parser fail when returning the empty string
 obligatoryStr p = Parser f
   where
