@@ -211,10 +211,10 @@ alphaNumCharParser :: Parser Char
 alphaNumCharParser = alphaCharParser ||| digitCharParser
 
 doubleQuotedStringParser :: Parser String
-doubleQuotedStringParser = charP '"' *++ greedify (notCharP '"') ++* charP '"'
+doubleQuotedStringParser = charP '"' *++ greedify (notCharP '"') ++* charP '"' -- NOTICE: does not work with escapes yet.
 
 singleQuotedStringParser :: Parser String
-singleQuotedStringParser = charP '\'' *++ greedify (notCharP '\'') ++* charP '\''
+singleQuotedStringParser = charP '\'' *++ greedify (notCharP '\'') ++* charP '\'' -- NOTICE: does not work with escapes yet.
 
 quotedStringParser :: Parser String
 quotedStringParser = doubleQuotedStringParser ||| singleQuotedStringParser
