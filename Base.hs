@@ -40,7 +40,7 @@ stringP (a : "") = stringify (charP a)
 stringP (a : as) = stringify (charP a) +++ stringP as
 
 ----------------------------------
--- unitary operators on parsers --
+-- UNITARY OPERATORS ON PARSERS --
 ----------------------------------
 
 stringify :: Parser Char -> Parser String
@@ -96,9 +96,9 @@ repeatStr n p
   | n <= 0 = undefined -- these cases do not make any sense, undefined is just right here
   | otherwise = p +++ repeatStr (n - 1) p
 
----------------------------
--- Verkettungsoperatoren --
----------------------------
+------------------------
+-- PARSER COMBINATORS --
+------------------------
 
 (|||) :: Parser a -> Parser a -> Parser a -- if parser a returns Nothing, try parser b
 (|||) pa pb = Parser f
