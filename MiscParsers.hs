@@ -22,21 +22,40 @@ floatParser = Parser f
       Just (rem, parsed) -> Just (rem, read parsed :: Float) -- TODO: readMaybe
       Nothing -> Nothing
 
-doubleQuotedStringParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
-doubleQuotedStringParser = charP '"' *++ greedify (notCharP '"') ++* charP '"'
+doubleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
+doubleQuotedStringLiteralParser = charP '"' *++ greedify (notCharP '"') ++* charP '"'
 
-singleQuotedStringParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
-singleQuotedStringParser = charP '\'' *++ greedify (notCharP '\'') ++* charP '\''
+singleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
+singleQuotedStringLiteralParser = charP '\'' *++ greedify (notCharP '\'') ++* charP '\''
 
-quotedStringParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
-quotedStringParser = doubleQuotedStringParser ||| singleQuotedStringParser 
+quotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
+quotedStringLiteralParser = doubleQuotedStringLiteralParser ||| singleQuotedStringLiteralParser
 
-stringLiteralParser :: Parser String -- NOTICE: uses haskell's read to handle escapes
-stringLiteralParser = Parser f
+singleQuotedStringParser :: Parser String -- NOTICE: uses haskell's read to handle escapes after replacing the single quotes with double quotes
+singleQuotedStringParser = Parser f -- TODO FIXME: crashes when a double quote is included in the single quoted string
   where
-    f i = case runParser doubleQuotedStringParser i of -- NOTICE: single quotes are not supported for string literals in Haskell and not read as such.
-      Just (rem, parsed@(p:_)) -> Just (rem, read parsed::String) -- TODO: readMaybe
+    f i = case runParser singleQuotedStringLiteralParser i of
+      Just (rem, parsed@(p : _)) -> Just (rem, read (doubleQuotify parsed) :: String) -- TODO: readMaybe
+      Nothing -> Nothing
+      where
+        doubleQuotify :: String -> String
+        doubleQuotify (a : as) = '"' : init as ++ "\""
+
+doubleQuotedStringParser :: Parser String -- NOTICE: uses haskell's read to handle escapes
+doubleQuotedStringParser = Parser f
+  where
+    f i = case runParser doubleQuotedStringLiteralParser i of
+      Just (rem, parsed@(p : _)) -> Just (rem, read parsed :: String) -- TODO: readMaybe
       Nothing -> Nothing
 
+stringParser :: Parser String
+stringParser = doubleQuotedStringParser ||| singleQuotedStringParser
+
 stringListParser :: Parser [String]
-stringListParser = charP '[' |> greedify (wsParser ?|> stringLiteralParser <|? wsParser <|? charP ',' <|? wsParser) <| charP ']'
+stringListParser = listParser stringParser
+
+listParser :: Parser a -> Parser [a]
+listParser p = charP '[' |> greedify (listElemParser p) <| charP ']' -- TODO FIXME: Enables commas to be left out
+
+listElemParser :: Parser a -> Parser a
+listElemParser p = wsParser ?|> p <|? wsParser <|? charP ',' <|? wsParser -- TODO FIXME: Enables commas to be left out
