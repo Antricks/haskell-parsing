@@ -5,11 +5,11 @@ import Data.Text.Internal.Builder.Int.Digits (digits)
 
 newtype Parser t = Parser {runParser :: String -> Maybe (String, t)}
 
---------------------------
--- Parser Konstruktoren --
---------------------------
+-------------------------
+-- PARSER CONSTRUCTORS --
+-------------------------
 
-charP :: Char -> Parser Char -- Baut einen Parser, der einen bestimmten Char entgegen nimmt
+charP :: Char -> Parser Char -- constructs a parser accepting one char that matches the given char
 charP a = Parser f
   where
     f "" = Nothing
@@ -17,7 +17,7 @@ charP a = Parser f
       | y == a = Just (ys, y)
       | otherwise = Nothing
 
-notCharP :: Char -> Parser Char
+notCharP :: Char -> Parser Char -- constructs a parser accepting one char that does NOT match the given char
 notCharP a = Parser f
   where
     f "" = Nothing
@@ -25,7 +25,7 @@ notCharP a = Parser f
       | y /= a = Just (ys, y)
       | otherwise = Nothing
 
-multiCharP :: [Char] -> Parser Char -- Baut einen Parser, der einen Char entgegennimmt, welcher aber aus einer vorgegebenen Liste stammen darf
+multiCharP :: [Char] -> Parser Char -- constructs a parser accepting one char if it is an element of the given char list
 multiCharP chars = Parser f
   where
     f "" = Nothing
@@ -33,14 +33,14 @@ multiCharP chars = Parser f
       | y `elem` chars = Just (ys, y)
       | otherwise = Nothing
 
-stringP :: String -> Parser String
+stringP :: String -> Parser String -- constructs a parser accepting strictly the given string
 stringP "" = undefined
 stringP (a : "") = stringify (charP a)
 stringP (a : as) = stringify (charP a) +++ stringP as
 
-------------------------
--- Unitäre Operatoren --
-------------------------
+----------------------------------
+-- unitary operators on parsers --
+----------------------------------
 
 stringify :: Parser Char -> Parser String
 stringify p = Parser f
@@ -49,20 +49,20 @@ stringify p = Parser f
       out@(Just (rem, parsed)) -> Just (rem, [parsed])
       Nothing -> Nothing
 
-greedify :: Parser Char -> Parser String -- Baut einen Parser, der einen möglichst langen String (akzeptiert auch den leeren) einliest, bis der nächste Char nicht mehr vom Char Parser angenommen wird
+greedify :: Parser Char -> Parser String -- NOTICE: will also return the empty string. Creates a string parser that takes in a string until the given char parser fails.
 greedify p = Parser f
   where
     f = f' ""
       where
         f' :: String -> String -> Maybe (String, String)
         f' buf remains
-          | isNothing nextParse = Just (remains, reverse buf) -- reverse um chars vorne anhängen zu können -> performance
+          | isNothing nextParse = Just (remains, reverse buf) -- reverse so we can append the characters at the head of the buf string -> should improve performance for big strings
           | otherwise =
               let Just (newRemains, parsedChar) = nextParse in f' (parsedChar : buf) newRemains
           where
             nextParse = runParser p remains
 
-obligatoryStr :: Parser String -> Parser String
+obligatoryStr :: Parser String -> Parser String -- makes a string parser fail when returning the empty string
 obligatoryStr p = Parser f
   where
     f input = case runParser p input of
@@ -75,26 +75,24 @@ obligatoryStr p = Parser f
 oblGreedify :: Parser Char -> Parser String
 oblGreedify = obligatoryStr . greedify
 
-repeatStr :: Integral a => a -> Parser String -> Parser String
+repeatStr :: Integral a => a -> Parser String -> Parser String -- chains together the same string parser n times
 repeatStr 1 p = p
 repeatStr n p
-  | n <= 0 = undefined -- Diesen Fall gibt es nicht, ein explizites undefined ist hier also völlig richtig.
+  | n <= 0 = undefined -- these cases do not make any sense, undefined is just right here
   | otherwise = p +++ repeatStr (n - 1) p
 
 ---------------------------
 -- Verkettungsoperatoren --
 ---------------------------
 
-parserOr :: Parser a -> Parser a -> Parser a -- Baut einen Parser, der den ersten Parser und bei Miserfolg den zweiten versucht
-parserOr pa pb = Parser f
+(|||) :: Parser a -> Parser a -> Parser a -- if parser a returns Nothing, try parser b
+(|||) pa pb = Parser f
   where
     f input
       | isJust $ runParser pa input = runParser pa input
       | otherwise = runParser pb input
 
-(|||) = parserOr -- Zucker für das parserOr
-
-(|>) :: Parser a -> Parser b -> Parser b -- Kettet einen String Parser hinter einen obligatorischen Char Parser, dessen Parse-Output ignoriert wird
+(|>) :: Parser a -> Parser b -> Parser b -- returns parsing output only from parser b but a result from parser a is obligatory 
 pa |> pb = Parser f
   where
     f i = case runParser pa i of
@@ -104,7 +102,7 @@ pa |> pb = Parser f
           Nothing -> Nothing
       Nothing -> Nothing
 
-(<|) :: Parser a -> Parser b -> Parser a -- Kettet einen String Parser vor einen obligatorischen Char Parser, dessen Parse-Output ignoriert wird
+(<|) :: Parser a -> Parser b -> Parser a -- returns parsing output only from parser a but a result from parser b is obligatory
 pa <| pb = Parser f
   where
     f i = case runParser pa i of
@@ -114,14 +112,14 @@ pa <| pb = Parser f
           Nothing -> Nothing
       Nothing -> Nothing
 
-(?|>) :: Parser a -> Parser b -> Parser b
+(?|>) :: Parser a -> Parser b -> Parser b -- returns parsing output only from parser b, a result from parser a is not obligatory. If parser a fails, parser b just works on the initial input
 pa ?|> pb = Parser f
   where
     f i = case runParser pa i of
       Just (rem_a, _) -> runParser pb rem_a
       Nothing -> runParser pb i
 
-(<|?) :: Parser a -> Parser b -> Parser a
+(<|?) :: Parser a -> Parser b -> Parser a -- returns parsing output only from parser a, a result from parser b is not obligatory. If parser b fails, the remains from parser a's output are returned
 pa <|? pb = Parser f
   where
     f i = case runParser pa i of
@@ -131,7 +129,7 @@ pa <|? pb = Parser f
           Nothing -> out_a
       Nothing -> Nothing
 
-(+++) :: Parser String -> Parser String -> Parser String -- Kettet einen String Parser hinter einen obligatorischen Char Parser, dessen Parse-Output mitgenommen wird
+(+++) :: Parser String -> Parser String -> Parser String -- chains together two string parsers and concatenates their parsed outputs
 pa +++ pb = Parser f
   where
     f i = case runParser pa i of
@@ -141,7 +139,7 @@ pa +++ pb = Parser f
           Nothing -> Nothing
       Nothing -> Nothing
 
-(*++) :: Parser Char -> Parser String -> Parser String -- Kettet einen String Parser hinter einen obligatorischen Char Parser, dessen Parse-Output mitgenommen wird
+(*++) :: Parser Char -> Parser String -> Parser String -- chains together a char parser and a string parser and concatenates their parsed outputs
 pa *++ pb = Parser f
   where
     f i = case runParser pa i of
@@ -151,7 +149,7 @@ pa *++ pb = Parser f
           Nothing -> Nothing
       Nothing -> Nothing
 
-(++*) :: Parser String -> Parser Char -> Parser String -- Kettet einen String Parser vor einen obligatorischen Char Parser, dessen Parse-Output mitgenommen wird
+(++*) :: Parser String -> Parser Char -> Parser String -- chains together a string parser and a char parser and concatenates their parsed outputs
 pa ++* pb = Parser f
   where
     f i = case runParser pa i of
@@ -161,11 +159,11 @@ pa ++* pb = Parser f
           Nothing -> Nothing
       Nothing -> Nothing
 
----------------------
--- konkrete Parser --
----------------------
+--------------------
+-- actual parsers --
+--------------------
 
-end :: Parser ()
+end :: Parser () -- fails if string is not empty, returns unit
 end = Parser f
   where
     f "" = Just ("", ())
@@ -195,8 +193,8 @@ digitsParser = oblGreedify digitCharParser
 intParser :: Parser Int
 intParser = Parser f
   where
-    f i = case runParser digitsParser i of 
-      Just (rem, parsed) -> Just (rem, read parsed::Int)
+    f i = case runParser digitsParser i of
+      Just (rem, parsed) -> Just (rem, read parsed :: Int)
       Nothing -> Nothing
 
 floatParser :: Parser Float
@@ -204,11 +202,11 @@ floatParser = Parser f
   where
     prepareParser :: Parser String
     prepareParser = digitsParser ++* charP '.' +++ digitsParser
-    
+
     f i = case runParser prepareParser i of
-      Just (rem, parsed) -> Just (rem, read parsed::Float)
+      Just (rem, parsed) -> Just (rem, read parsed :: Float)
       Nothing -> Nothing
-    
+
 alphaNumCharParser :: Parser Char
 alphaNumCharParser = alphaCharParser ||| digitCharParser
 
