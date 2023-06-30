@@ -1,4 +1,4 @@
-module JsonParser where
+module JsonParsers where
 
 import BasicParsers
 import MiscParsers
