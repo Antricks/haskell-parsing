@@ -1,6 +1,6 @@
-module BaseParsers where
+module BasicParsers where
 
-import Base
+import ParsingBase
 
 end :: Parser () -- fails if string is not empty, returns unit
 end = Parser f
@@ -10,9 +10,6 @@ end = Parser f
 
 whitespaceCharParser :: Parser Char
 whitespaceCharParser = multiCharP [' ', '\t', '\n', '\r', '\v', '\f']
-
-wsParser :: Parser String
-wsParser = oblGreedify whitespaceCharParser
 
 minAlphaCharParser :: Parser Char
 minAlphaCharParser = multiCharP ['a' .. 'z']

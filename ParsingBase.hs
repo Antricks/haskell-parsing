@@ -1,4 +1,4 @@
-module Base where
+module ParsingBase where
 
 import Data.Maybe
 import Data.Text.Internal.Builder.Int.Digits (digits)

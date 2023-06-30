@@ -1,10 +1,15 @@
 module MiscParsers where
 
-import Base
-import BaseParsers
+import ParsingBase
+import BasicParsers
 import Text.Read (readMaybe)
 
 -- Some JSON-ish experiments
+-- These are more or less just proof-of-concepts.
+-- Many serious parsers would probably use plenty of monadic types, for certain a lot in JSON.
+
+wsParser :: Parser String
+wsParser = oblGreedify whitespaceCharParser
 
 intParser :: Parser Int
 intParser = Parser f
@@ -38,7 +43,7 @@ singleQuotedStringLiteralParser = charP '\'' *++ greedify (notCharP '\'') ++* ch
 quotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
 quotedStringLiteralParser = doubleQuotedStringLiteralParser ||| singleQuotedStringLiteralParser
 
-singleQuotedStringParser :: Parser String -- NOTICE: uses haskell's read to handle escapes after replacing the single quotes with double quotes
+singleQuotedStringParser :: Parser String -- NOTICE: uses haskell's readMaybe to handle escapes after replacing the single quotes with double quotes
 singleQuotedStringParser = Parser f -- TODO FIXME: fails when a double quote is included in the single quoted string
   where
     doubleQuotify :: String -> String
@@ -51,7 +56,7 @@ singleQuotedStringParser = Parser f -- TODO FIXME: fails when a double quote is 
           Nothing -> Nothing
       Nothing -> Nothing
 
-doubleQuotedStringParser :: Parser String -- NOTICE: uses haskell's read to handle escapes
+doubleQuotedStringParser :: Parser String -- NOTICE: uses haskell's readMaybe to handle escapes
 doubleQuotedStringParser = Parser f
   where
     f i = case runParser doubleQuotedStringLiteralParser i of
