@@ -144,7 +144,7 @@ pa <|? pb = Parser f
           Nothing -> out_a
       Nothing -> Nothing
 
-(+++) :: Parser String -> Parser String -> Parser String -- chains together two string parsers and concatenates their parsed outputs
+(+++) :: Parser [a] -> Parser [a] -> Parser [a] -- chains together two string parsers and concatenates their parsed outputs
 pa +++ pb = Parser f
   where
     f i = case runParser pa i of
@@ -154,7 +154,7 @@ pa +++ pb = Parser f
           Nothing -> Nothing
       Nothing -> Nothing
 
-(*++) :: Parser Char -> Parser String -> Parser String -- chains together a char parser and a string parser and concatenates their parsed outputs
+(*++) :: Parser a -> Parser [a] -> Parser [a] -- chains together a char parser and a string parser and concatenates their parsed outputs
 pa *++ pb = Parser f
   where
     f i = case runParser pa i of
@@ -164,7 +164,7 @@ pa *++ pb = Parser f
           Nothing -> Nothing
       Nothing -> Nothing
 
-(++*) :: Parser String -> Parser Char -> Parser String -- chains together a string parser and a char parser and concatenates their parsed outputs
+(++*) :: Parser [a] -> Parser a -> Parser [a] -- chains together a string parser and a char parser and concatenates their parsed outputs
 pa ++* pb = Parser f
   where
     f i = case runParser pa i of
