@@ -55,7 +55,7 @@ stringListParser :: Parser [String]
 stringListParser = listParser stringParser
 
 listParser :: Parser a -> Parser [a]
-listParser p = charP '[' |> greedify (listElemParser p) <| charP ']' -- TODO FIXME: Enables commas to be left out
+listParser p = charP '[' |> (greedify (listElemParser p) ++* p) <| wsParser <| charP ']'
 
 listElemParser :: Parser a -> Parser a
-listElemParser p = wsParser ?|> p <|? wsParser <|? charP ',' <|? wsParser -- TODO FIXME: Enables commas to be left out
+listElemParser p = (wsParser ?|> p <|? wsParser) <| charP ',' <|? wsParser
