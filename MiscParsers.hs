@@ -34,9 +34,11 @@ floatParser = Parser f
           Nothing -> Nothing
       Nothing -> Nothing
 
+-- TODO take care of quote escapes
 doubleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
 doubleQuotedStringLiteralParser = charP '"' *++ greedify (notCharP '"') ++* charP '"'
 
+-- TODO take care of quote escapes
 singleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
 singleQuotedStringLiteralParser = charP '\'' *++ greedify (notCharP '\'') ++* charP '\''
 
@@ -72,8 +74,15 @@ stringParser = doubleQuotedStringParser ||| singleQuotedStringParser
 stringListParser :: Parser [String]
 stringListParser = listParser stringParser
 
+emptyListParser :: Parser [a]
+emptyListParser = Parser f 
+  where
+    f i = case runParser (stringify (charP '[') <|? wsParser ?|> stringify (charP ']')) i of
+      Just (rem, parsed) -> Just (rem, [])
+      Nothing -> Nothing 
+
 listParser :: Parser a -> Parser [a] -- NOTICE: Only supports same-type parsers in list, would need monadic types otherwise
-listParser p = charP '[' |> (greedify (listElemParser p) ++* p) <| wsParser <| charP ']'
+listParser p = emptyListParser ||| (charP '[' |> (greedify (listElemParser p) ++* p <|? wsParser) <| charP ']')
 
 listElemParser :: Parser a -> Parser a -- NOTICE: A trailing comma is mandatory for this parser.
 listElemParser p = (wsParser ?|> p <|? wsParser) <| charP ',' <|? wsParser
