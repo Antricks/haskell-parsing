@@ -1,4 +1,4 @@
-module ParsingBase where
+module Base.ParsingBase where
 
 import Data.Maybe
 import Text.Read (readMaybe)

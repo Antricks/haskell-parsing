@@ -1,7 +1,7 @@
-module MiscParsers (module MiscParsers, module ParsingBase) where
+module Parsers.MiscParsers (module Parsers.MiscParsers, module Base.ParsingBase) where
 
-import BasicParsers
-import ParsingBase
+import Base.ParsingBase
+import Parsers.BasicParsers
 import Text.Read (readMaybe)
 
 -- Some JSON-ish experiments
@@ -32,11 +32,11 @@ floatParser = Parser f
 
 -- TODO take care of quote escapes
 doubleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
-doubleQuotedStringLiteralParser = charP '"' *++ greedify (notCharP '"') ++* charP '"' --TODO: handle quote escapes
+doubleQuotedStringLiteralParser = charP '"' *++ greedify (notCharP '"') ++* charP '"' -- TODO: handle quote escapes
 
 -- TODO take care of quote escapes
 singleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
-singleQuotedStringLiteralParser = charP '\'' *++ greedify (notCharP '\'') ++* charP '\'' --TODO: handle quote escapes
+singleQuotedStringLiteralParser = charP '\'' *++ greedify (notCharP '\'') ++* charP '\'' -- TODO: handle quote escapes
 
 quotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
 quotedStringLiteralParser = doubleQuotedStringLiteralParser ||| singleQuotedStringLiteralParser
@@ -53,9 +53,9 @@ singleQuotedStringParser = Parser f
     doubleQuotify (a : as) = '"' : escapeDqs (init as) ++ "\""
 
     escapeDqs "" = ""
-    escapeDqs (a:as)
+    escapeDqs (a : as)
       | a == '"' = "\\\"" ++ escapeDqs as
-      | otherwise = a:escapeDqs as
+      | otherwise = a : escapeDqs as
 
 doubleQuotedStringParser :: Parser String -- NOTICE: uses haskell's readMaybe to handle escapes
 doubleQuotedStringParser = Parser f

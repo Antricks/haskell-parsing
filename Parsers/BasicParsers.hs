@@ -1,6 +1,6 @@
-module BasicParsers (module BasicParsers, module ParsingBase) where
+module Parsers.BasicParsers (module Parsers.BasicParsers, module Base.ParsingBase) where
 
-import ParsingBase
+import Base.ParsingBase
 
 end :: Parser () -- fails if string is not empty, returns unit
 end = Parser f

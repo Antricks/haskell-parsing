@@ -1,10 +1,10 @@
 module JsonTesting where
 
-import JsonParsers
-
+import Parsers.JsonParsers
 import Test.QuickCheck
 
 checkEmptyDict = runParser jsonObjParser "{}" === Just ("", JsonDict [])
+
 checkEmptyList = runParser jsonObjParser "[]" === Just ("", JsonList [])
 
 checkIntList :: [Int] -> Property
