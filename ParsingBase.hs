@@ -46,9 +46,9 @@ stringP (a : as) = stringify (charP a) +++ stringP as
 stringify :: Parser Char -> Parser String
 stringify p = Parser f
   where
-    f input = case runParser p input of
-      out@(Just (rem, parsed)) -> Just (rem, [parsed])
-      Nothing -> Nothing
+    f i = do
+      (rem, parsed) <- runParser p i
+      return (rem, [parsed])
 
 greedify :: Parser a -> Parser [a] -- NOTICE: will also return the empty list. Creates a list parser that takes in until the given parser fails. Collects outputs in a list. This also applies to Char -> [Char]::String
 greedify p = Parser f
@@ -74,15 +74,14 @@ greedifyStr p = Parser f
           where
             nextParse = runParser p remains
 
-obligatoryListContent :: Parser [a] -> Parser [a] -- makes a list parser fail when returning the empty string
+obligatoryListContent :: Parser [a] -> Parser [a] -- makes a parser fail when returning an empty list / the empty string
 obligatoryListContent p = Parser f
   where
-    f input = case runParser p input of
-      out@(Just (rem, parsed)) ->
-        case parsed of
-          [] -> Nothing
-          _ -> out
-      Nothing -> Nothing
+    f input = do
+      out@(rem, parsed) <- runParser p input
+      case parsed of
+        [] -> Nothing
+        _ -> return out
 
 oblGreedify :: Parser a -> Parser [a]
 oblGreedify = obligatoryListContent . greedify
@@ -103,29 +102,27 @@ repeatStr n p
 (|||) :: Parser a -> Parser a -> Parser a -- if parser a returns Nothing, try parser b
 (|||) pa pb = Parser f
   where
-    f input
-      | isJust $ runParser pa input = runParser pa input
-      | otherwise = runParser pb input
+    f i
+      | isJust out_a = out_a
+      | otherwise = runParser pb i
+      where
+        out_a = runParser pa i
 
 (|>) :: Parser a -> Parser b -> Parser b -- returns parsing output only from parser b but a result from parser a is obligatory
 pa |> pb = Parser f
   where
-    f i = case runParser pa i of
-      Just (rem_a, parsed_a) ->
-        case runParser pb rem_a of
-          Just (rem_b, parsed_b) -> Just (rem_b, parsed_b)
-          Nothing -> Nothing
-      Nothing -> Nothing
+    f i = do
+      (rem_a, _) <- runParser pa i
+      (rem_b, parsed_b) <- runParser pb rem_a
+      return (rem_b, parsed_b)
 
 (<|) :: Parser a -> Parser b -> Parser a -- returns parsing output only from parser a but a result from parser b is obligatory
 pa <| pb = Parser f
   where
-    f i = case runParser pa i of
-      Just (rem_a, parsed_a) ->
-        case runParser pb rem_a of
-          Just (rem_b, parsed_b) -> Just (rem_b, parsed_a)
-          Nothing -> Nothing
-      Nothing -> Nothing
+    f i = do
+      (rem_a, parsed_a) <- runParser pa i
+      (rem_b, parsed_b) <- runParser pb rem_a
+      return (rem_b, parsed_a)
 
 (?|>) :: Parser a -> Parser b -> Parser b -- returns parsing output only from parser b, a result from parser a is not obligatory. If parser a fails, parser b just works on the initial input
 pa ?|> pb = Parser f
@@ -137,39 +134,32 @@ pa ?|> pb = Parser f
 (<|?) :: Parser a -> Parser b -> Parser a -- returns parsing output only from parser a, a result from parser b is not obligatory. If parser b fails, the remains from parser a's output are returned
 pa <|? pb = Parser f
   where
-    f i = case runParser pa i of
-      out_a@(Just (rem_a, parsed_a)) ->
-        case runParser pb rem_a of
-          Just (rem_b, _) -> Just (rem_b, parsed_a)
-          Nothing -> out_a
-      Nothing -> Nothing
+    f i = do
+      out_a@(rem_a, parsed_a) <- runParser pa i
+      case runParser pb rem_a of
+        Just (rem_b, _) -> return (rem_b, parsed_a)
+        Nothing -> return out_a
 
 (+++) :: Parser [a] -> Parser [a] -> Parser [a] -- chains together two string parsers and concatenates their parsed outputs
 pa +++ pb = Parser f
   where
-    f i = case runParser pa i of
-      Just (rem_a, parsed_a) ->
-        case runParser pb rem_a of
-          Just (rem_b, parsed_b) -> Just (rem_b, parsed_a ++ parsed_b)
-          Nothing -> Nothing
-      Nothing -> Nothing
+    f i = do
+      (rem_a, parsed_a) <- runParser pa i
+      (rem_b, parsed_b) <- runParser pb rem_a
+      return (rem_b, parsed_a ++ parsed_b)
 
 (*++) :: Parser a -> Parser [a] -> Parser [a] -- chains together a char parser and a string parser and concatenates their parsed outputs
 pa *++ pb = Parser f
   where
-    f i = case runParser pa i of
-      Just (rem_a, parsed_a) ->
-        case runParser pb rem_a of
-          Just (rem_b, parsed_b) -> Just (rem_b, parsed_a : parsed_b)
-          Nothing -> Nothing
-      Nothing -> Nothing
+    f i = do
+      (rem_a, parsed_a) <- runParser pa i
+      (rem_b, parsed_b) <- runParser pb rem_a
+      return (rem_b, parsed_a : parsed_b)
 
 (++*) :: Parser [a] -> Parser a -> Parser [a] -- chains together a string parser and a char parser and concatenates their parsed outputs
 pa ++* pb = Parser f
   where
-    f i = case runParser pa i of
-      Just (rem_a, parsed_a) ->
-        case runParser pb rem_a of
-          Just (rem_b, parsed_b) -> Just (rem_b, parsed_a ++ [parsed_b])
-          Nothing -> Nothing
-      Nothing -> Nothing
+    f i = do
+      (rem_a, parsed_a) <- runParser pa i
+      (rem_b, parsed_b) <- runParser pb rem_a
+      Just (rem_b, parsed_a ++ [parsed_b])

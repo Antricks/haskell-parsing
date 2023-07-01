@@ -14,25 +14,21 @@ wsParser = oblGreedify whitespaceCharParser
 intParser :: Parser Int
 intParser = Parser f
   where
-    f i = case runParser digitsParser i of
-      Just (rem, parsed) ->
-        case readMaybe parsed :: Maybe Int of
-          Just parsedAndRead -> Just (rem, parsedAndRead)
-          Nothing -> Nothing
-      Nothing -> Nothing
+    f i = do
+      (rem, parsed) <- runParser digitsParser i
+      parsedAndRead <- readMaybe parsed :: Maybe Int
+      return (rem, parsedAndRead)
 
 floatParser :: Parser Float
 floatParser = Parser f
   where
-    prepareParser :: Parser String
-    prepareParser = digitsParser ++* charP '.' +++ digitsParser
+    f i = do
+      (rem, parsed) <- runParser floatRawParser i
+      parsedAndRead <- readMaybe parsed :: Maybe Float
+      return (rem, parsedAndRead)
 
-    f i = case runParser prepareParser i of
-      Just (rem, parsed) ->
-        case readMaybe parsed :: Maybe Float of
-          Just parsedAndRead -> Just (rem, parsedAndRead)
-          Nothing -> Nothing
-      Nothing -> Nothing
+    floatRawParser :: Parser String
+    floatRawParser = digitsParser ++* charP '.' +++ digitsParser
 
 -- TODO take care of quote escapes
 doubleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
@@ -48,24 +44,21 @@ quotedStringLiteralParser = doubleQuotedStringLiteralParser ||| singleQuotedStri
 singleQuotedStringParser :: Parser String -- NOTICE: uses haskell's readMaybe to handle escapes after replacing the single quotes with double quotes
 singleQuotedStringParser = Parser f -- TODO FIXME: fails when a double quote is included in the single quoted string
   where
+    f i = do
+      (rem, parsed) <- runParser singleQuotedStringLiteralParser i
+      parsedAndRead <- readMaybe (doubleQuotify parsed) :: Maybe String
+      return (rem, parsedAndRead)
+
     doubleQuotify :: String -> String
     doubleQuotify (a : as) = '"' : init as ++ "\"" -- TODO related: escape double quotes here
-    f i = case runParser singleQuotedStringLiteralParser i of
-      Just (rem, parsed) ->
-        case read (doubleQuotify parsed) :: Maybe String of
-          Just parsedAndRead -> Just (rem, parsedAndRead)
-          Nothing -> Nothing
-      Nothing -> Nothing
 
 doubleQuotedStringParser :: Parser String -- NOTICE: uses haskell's readMaybe to handle escapes
 doubleQuotedStringParser = Parser f
   where
-    f i = case runParser doubleQuotedStringLiteralParser i of
-      Just (rem, parsed) ->
-        case readMaybe parsed :: Maybe String of
-          Just parsedAndRead -> Just (rem, parsedAndRead)
-          Nothing -> Nothing
-      Nothing -> Nothing
+    f i = do
+      (rem, parsed) <- runParser doubleQuotedStringLiteralParser i
+      parsedAndRead <- readMaybe parsed :: Maybe String
+      return (rem, parsedAndRead)
 
 stringParser :: Parser String
 stringParser = doubleQuotedStringParser ||| singleQuotedStringParser
@@ -76,9 +69,9 @@ stringListParser = listParser stringParser
 emptyListParser :: Parser [a]
 emptyListParser = Parser f
   where
-    f i = case runParser (stringify (charP '[') <|? wsParser ?|> stringify (charP ']')) i of
-      Just (rem, parsed) -> Just (rem, [])
-      Nothing -> Nothing
+    f i = do
+      (rem, parsed) <- runParser (stringify (charP '[') <|? wsParser ?|> stringify (charP ']')) i
+      return (rem, [])
 
 listParser :: Parser a -> Parser [a] -- NOTICE: Only supports same-type parsers in list, would need monadic types otherwise
 listParser p = emptyListParser ||| (charP '[' |> (greedify (listElemParser p) ++* p <|? wsParser) <| charP ']')
