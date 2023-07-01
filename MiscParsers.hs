@@ -1,4 +1,4 @@
-module MiscParsers where
+module MiscParsers (module MiscParsers, module ParsingBase) where
 
 import BasicParsers
 import ParsingBase
@@ -15,7 +15,7 @@ intParser :: Parser Int
 intParser = Parser f
   where
     f i = do
-      (rem, parsed) <- runParser digitsParser i
+      (rem, parsed) <- runParser digitsParser i -- TODO: support negative numbers
       parsedAndRead <- readMaybe parsed :: Maybe Int
       return (rem, parsedAndRead)
 
@@ -23,7 +23,7 @@ floatParser :: Parser Float
 floatParser = Parser f
   where
     f i = do
-      (rem, parsed) <- runParser floatRawParser i
+      (rem, parsed) <- runParser floatRawParser i -- TODO: support negative numbers
       parsedAndRead <- readMaybe parsed :: Maybe Float
       return (rem, parsedAndRead)
 
@@ -32,11 +32,11 @@ floatParser = Parser f
 
 -- TODO take care of quote escapes
 doubleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
-doubleQuotedStringLiteralParser = charP '"' *++ greedify (notCharP '"') ++* charP '"'
+doubleQuotedStringLiteralParser = charP '"' *++ greedify (notCharP '"') ++* charP '"' --TODO: handle quote escapes
 
 -- TODO take care of quote escapes
 singleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
-singleQuotedStringLiteralParser = charP '\'' *++ greedify (notCharP '\'') ++* charP '\''
+singleQuotedStringLiteralParser = charP '\'' *++ greedify (notCharP '\'') ++* charP '\'' --TODO: handle quote escapes
 
 quotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
 quotedStringLiteralParser = doubleQuotedStringLiteralParser ||| singleQuotedStringLiteralParser
