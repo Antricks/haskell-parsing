@@ -17,7 +17,7 @@ intParser = Parser f
     f i = do
       (rem, parsed) <- runParser digitsParser i -- TODO: support negative numbers
       parsedAndRead <- readMaybe parsed :: Maybe Int
-      return (rem, parsedAndRead)
+      Just (rem, parsedAndRead)
 
 floatParser :: Parser Float
 floatParser = Parser f
@@ -25,7 +25,7 @@ floatParser = Parser f
     f i = do
       (rem, parsed) <- runParser floatRawParser i -- TODO: support negative numbers
       parsedAndRead <- readMaybe parsed :: Maybe Float
-      return (rem, parsedAndRead)
+      Just (rem, parsedAndRead)
 
     floatRawParser :: Parser String
     floatRawParser = digitsParser ++* charP '.' +++ digitsParser
@@ -47,7 +47,7 @@ singleQuotedStringParser = Parser f
     f i = do
       (rem, parsed) <- runParser singleQuotedStringLiteralParser i
       parsedAndRead <- readMaybe (doubleQuotify parsed) :: Maybe String
-      return (rem, parsedAndRead)
+      Just (rem, parsedAndRead)
 
     doubleQuotify :: String -> String
     doubleQuotify (a : as) = '"' : escapeDqs (init as) ++ "\""
@@ -63,7 +63,7 @@ doubleQuotedStringParser = Parser f
     f i = do
       (rem, parsed) <- runParser doubleQuotedStringLiteralParser i
       parsedAndRead <- readMaybe parsed :: Maybe String
-      return (rem, parsedAndRead)
+      Just (rem, parsedAndRead)
 
 stringParser :: Parser String
 stringParser = doubleQuotedStringParser ||| singleQuotedStringParser
@@ -76,7 +76,7 @@ emptyListParser = Parser f
   where
     f i = do
       (rem, parsed) <- runParser (stringify (charP '[') <|? wsParser ?|> stringify (charP ']')) i
-      return (rem, [])
+      Just (rem, [])
 
 listParser :: Parser a -> Parser [a] -- NOTICE: Only supports same-type parsers in list, would need monadic types otherwise
 listParser p = emptyListParser ||| (charP '[' |> (greedify (listElemParser p) ++* p <|? wsParser) <| charP ']')

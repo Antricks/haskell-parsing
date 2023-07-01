@@ -13,28 +13,28 @@ jsonIntParser = Parser f
   where
     f i = do
       (rem, parsed) <- runParser intParser i
-      return (rem, JsonInt parsed)
+      Just (rem, JsonInt parsed)
 
 jsonFloatParser :: Parser JsonObj
 jsonFloatParser = Parser f
   where
     f i = do
       (rem, parsed) <- runParser floatParser i
-      return (rem, JsonFloat parsed)
+      Just (rem, JsonFloat parsed)
 
 jsonStringParser :: Parser JsonObj
 jsonStringParser = Parser f
   where
     f i = do
       (rem, parsed) <- runParser stringParser i
-      return (rem, JsonString parsed)
+      Just (rem, JsonString parsed)
 
 jsonListParser :: Parser JsonObj
 jsonListParser = Parser f
   where
     f i = do
       (rem, parsed) <- runParser (listParser jsonObjParser) i
-      return (rem, JsonList parsed)
+      Just (rem, JsonList parsed)
 
 jsonKeyValueParser :: Parser (JsonObj, JsonObj)
 jsonKeyValueParser = Parser f
@@ -42,14 +42,14 @@ jsonKeyValueParser = Parser f
     f i = do
       (rem_key, parsed_key) <- runParser ((jsonKeyObjParser <|? wsParser) <| charP ':' <|? wsParser) i
       (rem_val, parsed_val) <- runParser (jsonObjParser <|? wsParser) rem_key
-      return (rem_val, (parsed_key, parsed_val))
+      Just (rem_val, (parsed_key, parsed_val))
 
 jsonDictParser :: Parser JsonObj
 jsonDictParser = Parser f
   where
     f i = do
       (rem, parsed) <- runParser dictRawParser i
-      return (rem, JsonDict parsed)
+      Just (rem, JsonDict parsed)
 
     dictRawParser :: Parser [(JsonObj, JsonObj)]
     dictRawParser = emptyDictParser ||| (charP '{' |> (wsParser ?|> (greedify (jsonKeyValueParser <| charP ',' <|? wsParser) ++* jsonKeyValueParser) <|? wsParser) <| charP '}')
@@ -59,7 +59,7 @@ jsonDictParser = Parser f
       where
         f i = do
           (rem, parsed) <- runParser (stringify (charP '{') <|? wsParser ?|> stringify (charP '}')) i
-          return (rem, [])
+          Just (rem, [])
 
 jsonObjParser :: Parser JsonObj
 jsonObjParser = jsonFloatParser ||| jsonIntParser ||| jsonStringParser ||| jsonListParser ||| jsonDictParser

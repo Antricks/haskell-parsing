@@ -47,7 +47,7 @@ stringify p = Parser f
   where
     f i = do
       (rem, parsed) <- runParser p i
-      return (rem, [parsed])
+      Just (rem, [parsed])
 
 greedify :: Parser a -> Parser [a] -- NOTICE: will also return the empty list. Creates a list parser that takes in until the given parser fails. Collects outputs in a list. This also applies to Char -> [Char]::String
 greedify p = Parser f
@@ -80,7 +80,7 @@ obligatoryListContent p = Parser f
       out@(rem, parsed) <- runParser p input
       case parsed of
         [] -> Nothing
-        _ -> return out
+        _ -> Just out
 
 oblGreedify :: Parser a -> Parser [a]
 oblGreedify = obligatoryListContent . greedify
@@ -113,7 +113,7 @@ pa |> pb = Parser f
     f i = do
       (rem_a, _) <- runParser pa i
       (rem_b, parsed_b) <- runParser pb rem_a
-      return (rem_b, parsed_b)
+      Just (rem_b, parsed_b)
 
 (<|) :: Parser a -> Parser b -> Parser a -- returns parsing output only from parser a but a result from parser b is obligatory
 pa <| pb = Parser f
@@ -121,7 +121,7 @@ pa <| pb = Parser f
     f i = do
       (rem_a, parsed_a) <- runParser pa i
       (rem_b, parsed_b) <- runParser pb rem_a
-      return (rem_b, parsed_a)
+      Just (rem_b, parsed_a)
 
 (?|>) :: Parser a -> Parser b -> Parser b -- returns parsing output only from parser b, a result from parser a is not obligatory. If parser a fails, parser b just works on the initial input
 pa ?|> pb = Parser f
@@ -145,7 +145,7 @@ pa +++ pb = Parser f
     f i = do
       (rem_a, parsed_a) <- runParser pa i
       (rem_b, parsed_b) <- runParser pb rem_a
-      return (rem_b, parsed_a ++ parsed_b)
+      Just (rem_b, parsed_a ++ parsed_b)
 
 (*++) :: Parser a -> Parser [a] -> Parser [a] -- chains together a char parser and a string parser and concatenates their parsed outputs
 pa *++ pb = Parser f
@@ -153,7 +153,7 @@ pa *++ pb = Parser f
     f i = do
       (rem_a, parsed_a) <- runParser pa i
       (rem_b, parsed_b) <- runParser pb rem_a
-      return (rem_b, parsed_a : parsed_b)
+      Just (rem_b, parsed_a : parsed_b)
 
 (++*) :: Parser [a] -> Parser a -> Parser [a] -- chains together a string parser and a char parser and concatenates their parsed outputs
 pa ++* pb = Parser f
