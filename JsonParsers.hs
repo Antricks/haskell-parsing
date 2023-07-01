@@ -48,15 +48,22 @@ jsonKeyValueParser = Parser f
 jsonDictParser :: Parser JsonObj
 jsonDictParser = Parser f
   where
+    emptyDictParser :: Parser [a] -- code duplication from emptyListParser in misc
+    emptyDictParser = Parser f
+      where
+        f i = case runParser (stringify (charP '{') <|? wsParser ?|> stringify (charP '}')) i of
+          Just (rem, parsed) -> Just (rem, [])
+          Nothing -> Nothing
+
     dictRawParser :: Parser [(JsonObj, JsonObj)]
-    dictRawParser = charP '{' |> (wsParser ?|> (greedify (jsonKeyValueParser <| charP ',' <|? wsParser) ++* jsonKeyValueParser) <|? wsParser) <| charP '}'
+    dictRawParser = emptyDictParser ||| (charP '{' |> (wsParser ?|> (greedify (jsonKeyValueParser <| charP ',' <|? wsParser) ++* jsonKeyValueParser) <|? wsParser) <| charP '}')
 
     f i = case runParser dictRawParser i of
       Just (rem, parsed) -> Just (rem, JsonDict parsed)
       Nothing -> Nothing
 
 jsonObjParser :: Parser JsonObj
-jsonObjParser = jsonFloatParser ||| jsonIntParser ||| jsonStringParser ||| jsonListParser
+jsonObjParser = jsonFloatParser ||| jsonIntParser ||| jsonStringParser ||| jsonListParser ||| jsonDictParser
 
 jsonKeyObjParser :: Parser JsonObj
 jsonKeyObjParser = jsonFloatParser ||| jsonIntParser ||| jsonStringParser
