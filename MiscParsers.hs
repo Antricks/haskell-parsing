@@ -42,7 +42,7 @@ quotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input st
 quotedStringLiteralParser = doubleQuotedStringLiteralParser ||| singleQuotedStringLiteralParser
 
 singleQuotedStringParser :: Parser String -- NOTICE: uses haskell's readMaybe to handle escapes after replacing the single quotes with double quotes
-singleQuotedStringParser = Parser f -- TODO FIXME: fails when a double quote is included in the single quoted string
+singleQuotedStringParser = Parser f
   where
     f i = do
       (rem, parsed) <- runParser singleQuotedStringLiteralParser i
@@ -50,7 +50,12 @@ singleQuotedStringParser = Parser f -- TODO FIXME: fails when a double quote is 
       return (rem, parsedAndRead)
 
     doubleQuotify :: String -> String
-    doubleQuotify (a : as) = '"' : init as ++ "\"" -- TODO related: escape double quotes here
+    doubleQuotify (a : as) = '"' : escapeDqs (init as) ++ "\""
+
+    escapeDqs "" = ""
+    escapeDqs (a:as)
+      | a == '"' = "\\\"" ++ escapeDqs as
+      | otherwise = a:escapeDqs as
 
 doubleQuotedStringParser :: Parser String -- NOTICE: uses haskell's readMaybe to handle escapes
 doubleQuotedStringParser = Parser f
