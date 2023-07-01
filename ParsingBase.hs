@@ -162,3 +162,22 @@ pa ++* pb = Parser f
       (rem_a, parsed_a) <- runParser pa i
       (rem_b, parsed_b) <- runParser pb rem_a
       Just (rem_b, parsed_a ++ [parsed_b])
+
+(?++) :: Parser [a] -> Parser [a] -> Parser [a]
+pa ?++ pb = Parser f
+  where
+    f i = case runParser pa i of
+      Just (rem_a, parsed_a) -> do
+        (rem_b, parsed_b) <- runParser pb rem_a
+        Just (rem_b, parsed_a ++ parsed_b)
+      Nothing -> case runParser pb i of
+        Just (rem_b, parsed_b) -> Just (rem_b, parsed_b)
+
+(++?) :: Parser [a] -> Parser [a] -> Parser [a]
+pa ++? pb = Parser f
+  where
+    f i = do
+      out_a@(rem_a, parsed_a) <- runParser pa i
+      case runParser pb rem_a of
+        Just (rem_b, parsed_b) -> Just (rem_b, parsed_a ++ parsed_b)
+        Nothing -> Just out_a
