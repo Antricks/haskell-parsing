@@ -37,13 +37,26 @@ jsonListParser = Parser f
       Nothing -> Nothing
 
 jsonKeyValueParser :: Parser (JsonObj, JsonObj)
-jsonKeyValueParser = undefined -- TODO implement - That's going to be a bit trickier...
+jsonKeyValueParser = Parser f
+  where
+    f i = case runParser ((jsonKeyObjParser <|? wsParser) <| charP ':' <|? wsParser) i of
+      Just (rem_key, parsed_key) -> case runParser (jsonObjParser <|? wsParser) rem_key of
+        Just (rem_val, parsed_val) -> Just (rem_val, (parsed_key, parsed_val))
+        Nothing -> Nothing
+      Nothing -> Nothing
 
-jsonDictParser :: Parser [(JsonObj, JsonObj)]
-jsonDictParser = charP '{' |> (wsParser ?|> greedify jsonKeyValueParser <|? wsParser) <| charP '}' -- I could theoretically abstract this to misc and then wrap it like the others...
+jsonDictParser :: Parser JsonObj
+jsonDictParser = Parser f
+  where
+    dictRawParser :: Parser [(JsonObj, JsonObj)]
+    dictRawParser = charP '{' |> (wsParser ?|> (greedify (jsonKeyValueParser <| charP ',' <|? wsParser) ++* jsonKeyValueParser) <|? wsParser) <| charP '}'
 
+    f i = case runParser dictRawParser i of
+      Just (rem, parsed) -> Just (rem, JsonDict parsed)
+      Nothing -> Nothing
+      
 jsonObjParser :: Parser JsonObj
 jsonObjParser = jsonFloatParser ||| jsonIntParser ||| jsonStringParser ||| jsonListParser
 
-jsonKeyParser :: Parser JsonObj
-jsonKeyParser = jsonFloatParser ||| jsonIntParser ||| jsonStringParser
+jsonKeyObjParser :: Parser JsonObj
+jsonKeyObjParser = jsonFloatParser ||| jsonIntParser ||| jsonStringParser
