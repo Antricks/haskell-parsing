@@ -54,7 +54,7 @@ jsonDictParser = Parser f
     f i = case runParser dictRawParser i of
       Just (rem, parsed) -> Just (rem, JsonDict parsed)
       Nothing -> Nothing
-      
+
 jsonObjParser :: Parser JsonObj
 jsonObjParser = jsonFloatParser ||| jsonIntParser ||| jsonStringParser ||| jsonListParser
 

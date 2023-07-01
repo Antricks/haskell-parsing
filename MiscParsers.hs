@@ -1,7 +1,7 @@
 module MiscParsers where
 
-import ParsingBase
 import BasicParsers
+import ParsingBase
 import Text.Read (readMaybe)
 
 -- Some JSON-ish experiments
@@ -49,8 +49,7 @@ singleQuotedStringParser :: Parser String -- NOTICE: uses haskell's readMaybe to
 singleQuotedStringParser = Parser f -- TODO FIXME: fails when a double quote is included in the single quoted string
   where
     doubleQuotify :: String -> String
-    doubleQuotify (a : as) = '"' : init as ++ "\"" --TODO related: escape double quotes here
-
+    doubleQuotify (a : as) = '"' : init as ++ "\"" -- TODO related: escape double quotes here
     f i = case runParser singleQuotedStringLiteralParser i of
       Just (rem, parsed) ->
         case read (doubleQuotify parsed) :: Maybe String of
@@ -75,11 +74,11 @@ stringListParser :: Parser [String]
 stringListParser = listParser stringParser
 
 emptyListParser :: Parser [a]
-emptyListParser = Parser f 
+emptyListParser = Parser f
   where
     f i = case runParser (stringify (charP '[') <|? wsParser ?|> stringify (charP ']')) i of
       Just (rem, parsed) -> Just (rem, [])
-      Nothing -> Nothing 
+      Nothing -> Nothing
 
 listParser :: Parser a -> Parser [a] -- NOTICE: Only supports same-type parsers in list, would need monadic types otherwise
 listParser p = emptyListParser ||| (charP '[' |> (greedify (listElemParser p) ++* p <|? wsParser) <| charP ']')

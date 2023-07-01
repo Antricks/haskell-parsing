@@ -70,7 +70,7 @@ greedifyStr p = Parser f
         f' buf remains
           | isNothing nextParse = Just (remains, buf) -- reverse so we can append the characters at the head of the buf string -> should improve performance for big strings
           | otherwise =
-              let Just (newRemains, parsedChar) = nextParse in f' (buf++parsedChar) newRemains
+              let Just (newRemains, parsedChar) = nextParse in f' (buf ++ parsedChar) newRemains
           where
             nextParse = runParser p remains
 
@@ -107,7 +107,7 @@ repeatStr n p
       | isJust $ runParser pa input = runParser pa input
       | otherwise = runParser pb input
 
-(|>) :: Parser a -> Parser b -> Parser b -- returns parsing output only from parser b but a result from parser a is obligatory 
+(|>) :: Parser a -> Parser b -> Parser b -- returns parsing output only from parser b but a result from parser a is obligatory
 pa |> pb = Parser f
   where
     f i = case runParser pa i of
