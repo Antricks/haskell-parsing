@@ -42,7 +42,7 @@ stringP (a : as) = stringify (charP a) +++ stringP as
 -- UNITARY OPERATORS ON PARSERS --
 ----------------------------------
 
-stringify :: Parser Char -> Parser String
+stringify :: Parser a -> Parser [a]
 stringify p = Parser f
   where
     f i = do
@@ -107,6 +107,13 @@ repeatStr n p
       where
         out_a = runParser pa i
 
+(?!) :: Parser [a] -> [a] -> Parser [a] -- returns a default value `s` if the parser `p` fails
+p ?! s = Parser f
+  where
+    f i = case runParser p i of
+      out@(Just (rem, parsed)) -> out
+      Nothing -> Just (i, s)
+
 (|>) :: Parser a -> Parser b -> Parser b -- returns parsing output only from parser b but a result from parser a is obligatory
 pa |> pb = Parser f
   where
@@ -163,15 +170,16 @@ pa ++* pb = Parser f
       (rem_b, parsed_b) <- runParser pb rem_a
       Just (rem_b, parsed_a ++ [parsed_b])
 
-(?++) :: Parser [a] -> Parser [a] -> Parser [a]
+(?++) :: Parser [a] -> Parser [a] -> Parser [a] -- works like +++ if both parsers succeed, makes the parser on the question mark side optional though
 pa ?++ pb = Parser f
   where
     f i = case runParser pa i of
       Just (rem_a, parsed_a) -> do
         (rem_b, parsed_b) <- runParser pb rem_a
         Just (rem_b, parsed_a ++ parsed_b)
-      Nothing -> case runParser pb i of
-        Just (rem_b, parsed_b) -> Just (rem_b, parsed_b)
+      Nothing -> do
+        out_b@(rem_b, parsed_b) <- runParser pb i
+        Just out_b
 
 (++?) :: Parser [a] -> Parser [a] -> Parser [a]
 pa ++? pb = Parser f
@@ -181,3 +189,15 @@ pa ++? pb = Parser f
       case runParser pb rem_a of
         Just (rem_b, parsed_b) -> Just (rem_b, parsed_a ++ parsed_b)
         Nothing -> Just out_a
+
+(++?*) :: Parser [a] -> Parser a -> Parser [a] -- like ?++ or ++? but with syntactic sugar for stringify, might reimplement some with (:) later
+pa ++?* pb = pa ++? stringify pb
+
+(*++?) :: Parser a -> Parser [a] -> Parser [a]
+pa *++? pb = stringify pa ++? pb
+
+(*?++) :: Parser a -> Parser [a] -> Parser [a]
+pa *?++ pb = stringify pa ?++ pb
+
+(?++*) :: Parser [a] -> Parser a -> Parser [a]
+pa ?++* pb = pa ?++ stringify pb

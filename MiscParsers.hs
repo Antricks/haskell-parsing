@@ -15,7 +15,7 @@ intParser :: Parser Int
 intParser = Parser f
   where
     f i = do
-      (rem, parsed) <- runParser digitsParser i -- TODO: support negative numbers
+      (rem, parsed) <- runParser (charP '+' ?|> (charP '-' *?++ digitsParser)) i
       parsedAndRead <- readMaybe parsed :: Maybe Int
       Just (rem, parsedAndRead)
 
@@ -23,12 +23,12 @@ floatParser :: Parser Float
 floatParser = Parser f
   where
     f i = do
-      (rem, parsed) <- runParser floatRawParser i -- TODO: support negative numbers
+      (rem, parsed) <- runParser floatReadableParser i
       parsedAndRead <- readMaybe parsed :: Maybe Float
       Just (rem, parsedAndRead)
 
-    floatRawParser :: Parser String
-    floatRawParser = digitsParser ++* charP '.' +++ digitsParser
+    floatReadableParser :: Parser String
+    floatReadableParser = charP '+' ?|> (charP '-' *?++ (digitsParser ?! "0") +++ (charP '.' *++ digitsParser))
 
 -- TODO take care of quote escapes
 doubleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
