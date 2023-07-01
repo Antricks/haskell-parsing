@@ -1,7 +1,6 @@
 module ParsingBase where
 
 import Data.Maybe
-import Data.Text.Internal.Builder.Int.Digits (digits)
 import Text.Read (readMaybe)
 
 newtype Parser t = Parser {runParser :: String -> Maybe (String, t)}
