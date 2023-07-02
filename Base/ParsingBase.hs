@@ -25,6 +25,14 @@ notCharP a = Parser f
       | y /= a = Just (ys, y)
       | otherwise = Nothing
 
+notMultiCharP :: [Char] -> Parser Char
+notMultiCharP chars = Parser f
+  where
+    f "" = Nothing
+    f (y : ys)
+      | y `notElem` chars = Just (ys, y)
+      | otherwise = Nothing
+
 multiCharP :: [Char] -> Parser Char -- constructs a parser accepting one char if it is an element of the given char list
 multiCharP chars = Parser f
   where
@@ -36,7 +44,29 @@ multiCharP chars = Parser f
 stringP :: String -> Parser String -- constructs a parser accepting strictly the given string
 stringP "" = undefined
 stringP (a : "") = stringify (charP a)
-stringP (a : as) = stringify (charP a) +++ stringP as
+stringP (a : as) = charP a *++ stringP as
+
+anyCharP :: Parser Char -- Just accepts one char unconditionally
+anyCharP = Parser f
+  where
+    f "" = Nothing
+    f (a : as) = Just (as, a)
+
+predP :: (a -> Bool) -> Parser a -> Parser a -- takes a predicate that is obligatory for the parser to succeed
+predP pred parser = Parser f
+  where
+    f i = do
+      out@(rem, parsed) <- runParser parser i
+
+      if pred parsed
+        then return out
+        else Nothing
+
+end :: Parser () -- fails if string is not empty, returns unit
+end = Parser f
+  where
+    f "" = Just ("", ())
+    f _ = Nothing
 
 ----------------------------------
 -- UNITARY OPERATORS ON PARSERS --
@@ -61,10 +91,10 @@ greedify p = Parser f
           where
             nextParse = runParser p remains
 
-greedifyStr :: Parser String -> Parser String -- NOTICE: will also return the empty string. Creates a string parser that takes in a string until the given string parser fails. Concatenates outputs
+greedifyStr :: Parser [a] -> Parser [a] -- NOTICE: will also return the empty string. Creates a string parser that takes in a string until the given string parser fails. Concatenates outputs
 greedifyStr p = Parser f
   where
-    f = f' ""
+    f = f' []
       where
         f' buf remains
           | isNothing nextParse = Just (remains, buf) -- reverse so we can append the characters at the head of the buf string -> should improve performance for big strings

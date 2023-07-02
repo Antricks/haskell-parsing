@@ -2,12 +2,6 @@ module Parsers.BasicParsers (module Parsers.BasicParsers, module Base.ParsingBas
 
 import Base.ParsingBase
 
-end :: Parser () -- fails if string is not empty, returns unit
-end = Parser f
-  where
-    f "" = Just ("", ())
-    f _ = Nothing
-
 whitespaceCharParser :: Parser Char
 whitespaceCharParser = multiCharP [' ', '\t', '\n', '\r', '\v', '\f']
 
