@@ -137,12 +137,19 @@ repeatStr n p
       where
         out_a = runParser pa i
 
-(?!) :: Parser [a] -> [a] -> Parser [a] -- returns a default value `s` if the parser `p` fails
-p ?! s = Parser f
+(?!) :: Parser a -> a -> Parser a -- returns a default value `s` if the parser `p` fails
+p ?! a = Parser f
   where
     f i = case runParser p i of
       out@(Just (rem, parsed)) -> out
-      Nothing -> Just (i, s)
+      Nothing -> Just (i, a)
+
+(?+) :: Parser a -> b -> Parser b -- returns a default value `s` if the parser `p` succeeds
+p ?+ a = Parser f
+  where
+    f i = do
+      (rem, parsed) <- runParser p i
+      Just (rem, a)
 
 (|>) :: Parser a -> Parser b -> Parser b -- returns parsing output only from parser b but a result from parser a is obligatory
 pa |> pb = Parser f
