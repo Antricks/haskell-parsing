@@ -2,6 +2,7 @@ module Base.ParsingBase where
 
 import Data.Maybe
 import Text.Read (readMaybe)
+import qualified Data.Char
 
 newtype Parser t = Parser {runParser :: String -> Maybe (String, t)}
 
@@ -15,6 +16,14 @@ charP a = Parser f
     f "" = Nothing
     f (y : ys)
       | y == a = Just (ys, y)
+      | otherwise = Nothing
+
+caseInsCharP :: Char -> Parser Char -- constructs a parser accepting one char that matches the given char
+caseInsCharP a = Parser f
+  where
+    f "" = Nothing
+    f (y : ys)
+      | Data.Char.toUpper y == Data.Char.toUpper a = Just (ys, y)
       | otherwise = Nothing
 
 notCharP :: Char -> Parser Char -- constructs a parser accepting one char that does NOT match the given char
@@ -45,6 +54,11 @@ stringP :: String -> Parser String -- constructs a parser accepting strictly the
 stringP "" = undefined
 stringP (a : "") = stringify (charP a)
 stringP (a : as) = charP a *++ stringP as
+
+caseInsStringP :: String -> Parser String
+caseInsStringP "" = undefined
+caseInsStringP (a: "") = stringify (caseInsCharP a)
+caseInsStringP (a: as) = caseInsCharP a *++ stringP as
 
 anyCharP :: Parser Char -- Just accepts one char unconditionally
 anyCharP = Parser f
