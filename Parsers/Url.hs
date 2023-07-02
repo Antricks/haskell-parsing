@@ -80,12 +80,8 @@ urlParser :: Parser Url
 urlParser = Parser f
   where
     f i = do
-      let urlInfo = Nothing
-
       (lastRem, scheme) <- runParser schemeParser i
       (lastRem, _) <- runParser (charP ':') lastRem
-
-      let resultUrlObj = Url scheme []
 
       let schemeSpecificParser = case scheme of
             Http -> httpSchemeSpecP
@@ -97,5 +93,8 @@ urlParser = Parser f
             Data -> undefined
             Telnet -> undefined
             :: Parser [UrlInfo]
+
+      (lastRem, urlInfo) <- runParser schemeSpecificParser lastRem
+      let resultUrlObj = Url scheme urlInfo
 
       Just (lastRem, resultUrlObj)
