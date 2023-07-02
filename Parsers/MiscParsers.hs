@@ -30,18 +30,21 @@ floatParser = Parser f
     floatReadableParser :: Parser String
     floatReadableParser = charP '+' ?|> (charP '-' *?++ (digitsParser ?! "0") +++ (charP '.' *++ digitsParser))
 
--- TODO take care of quote escapes
-doubleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
-doubleQuotedStringLiteralParser = charP '"' *++ greedify (notCharP '"') ++* charP '"' -- TODO: handle quote escapes
+doubleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string.
+doubleQuotedStringLiteralParser = 
+  charP '"' *++ quotedStringContent '\"' ++* charP '"'
 
--- TODO take care of quote escapes
-singleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
-singleQuotedStringLiteralParser = charP '\'' *++ greedify (notCharP '\'') ++* charP '\'' -- TODO: handle quote escapes
+singleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string.
+singleQuotedStringLiteralParser =
+  charP '\'' *++ quotedStringContent '\'' ++* charP '\''
 
-quotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string. Does not handle quote escapes.
+quotedStringContent :: Char -> Parser String
+quotedStringContent q = greedifyStr (stringP "\\\\" ||| (stringify (charP '\\') ++* notCharP '\\') ||| stringify (notMultiCharP [q, '\\']))
+
+quotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string.
 quotedStringLiteralParser = doubleQuotedStringLiteralParser ||| singleQuotedStringLiteralParser
 
-singleQuotedStringParser :: Parser String -- NOTICE: uses haskell's readMaybe to handle escapes after replacing the single quotes with double quotes
+singleQuotedStringParser :: Parser String -- NOTICE: uses haskell's readMaybe to handle escapes after replacing the outer single quotes with double quotes
 singleQuotedStringParser = Parser f
   where
     f i = do
@@ -78,7 +81,7 @@ emptyListParser = Parser f
       (rem, parsed) <- runParser (stringify (charP '[') <|? wsParser ?|> stringify (charP ']')) i
       Just (rem, [])
 
-listParser :: Parser a -> Parser [a] -- NOTICE: Only supports same-type parsers in list, would need monadic types otherwise
+listParser :: Parser a -> Parser [a] -- NOTICE: Only supports same output type parsers in list
 listParser p = emptyListParser ||| (charP '[' |> (greedify (listElemParser p) ++* p <|? wsParser) <| charP ']')
 
 listElemParser :: Parser a -> Parser a -- NOTICE: A trailing comma is mandatory for this parser.
