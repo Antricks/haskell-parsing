@@ -1,6 +1,6 @@
-module JsonTesting where
+module Test.Json where
 
-import Parsers.JsonParsers
+import Parsers.Json
 import Test.QuickCheck
 
 checkEmptyDict = runParser jsonObjParser "{}" === Just ("", JsonDict [])

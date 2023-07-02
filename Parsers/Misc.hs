@@ -1,7 +1,7 @@
-module Parsers.MiscParsers (module Parsers.MiscParsers, module Base.ParsingBase) where
+module Parsers.Misc (module Parsers.Misc, module Base.ParsingBase) where
 
 import Base.ParsingBase
-import Parsers.BasicParsers
+import Parsers.Basic
 import Text.Read (readMaybe)
 
 -- Some JSON-ish experiments

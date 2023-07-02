@@ -1,8 +1,8 @@
-module Parsers.JsonParsers (module Parsers.JsonParsers, module Base.ParsingBase) where
+module Parsers.Json (module Parsers.Json, module Base.ParsingBase) where
 
 import Base.ParsingBase
-import Parsers.BasicParsers
-import Parsers.MiscParsers
+import Parsers.Basic
+import Parsers.Misc
 
 data JsonObj = JsonInt Int | JsonFloat Float | JsonString String | JsonList [JsonObj] | JsonDict [(JsonObj, JsonObj)] deriving (Show, Eq)
 

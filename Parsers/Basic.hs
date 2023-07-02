@@ -1,4 +1,4 @@
-module Parsers.BasicParsers (module Parsers.BasicParsers, module Base.ParsingBase) where
+module Parsers.Basic (module Parsers.Basic, module Base.ParsingBase) where
 
 import Base.ParsingBase
 
