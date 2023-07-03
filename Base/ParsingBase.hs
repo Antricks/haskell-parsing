@@ -139,6 +139,12 @@ repeatStr n p
   | n <= 0 = undefined -- these cases do not make any sense, undefined is just right here
   | otherwise = p +++ repeatStr (n - 1) p
 
+wrap :: (a -> b) -> Parser a -> Parser b -- apply function `t` to parser result before returning
+wrap t p = Parser f
+  where
+    f i = do
+      (rem, parsed) <- runParser p i
+      Just (rem, t parsed)
 ------------------------
 -- PARSER COMBINATORS --
 ------------------------
