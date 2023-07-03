@@ -18,7 +18,7 @@ jsonStringP :: Parser JsonObj
 jsonStringP = wrap JsonString stringP
 
 jsonListP :: Parser JsonObj
-jsonListP = wrap JsonList $ listParser jsonObjP
+jsonListP = wrap JsonList $ listP jsonObjP
 
 jsonKeyValueP :: Parser (JsonObj, JsonObj)
 jsonKeyValueP = Parser f
@@ -36,10 +36,10 @@ jsonDictP = Parser f
       Just (rem, JsonDict parsed)
 
     dictRawP :: Parser [(JsonObj, JsonObj)]
-    dictRawP = emptyDictParser ||| (charP '{' |> (whitespaceP ?|> (greedify (jsonKeyValueP <| charP ',' <|? whitespaceP) ++* jsonKeyValueP) <|? whitespaceP) <| charP '}')
+    dictRawP = emptyDictP ||| (charP '{' |> (whitespaceP ?|> (greedify (jsonKeyValueP <| charP ',' <|? whitespaceP) ++* jsonKeyValueP) <|? whitespaceP) <| charP '}')
 
-    emptyDictParser :: Parser [a] -- code duplication from emptyListParser in misc
-    emptyDictParser = Parser f
+    emptyDictP :: Parser [a] -- some code duplication from emptyListP in misc
+    emptyDictP = Parser f
       where
         f i = do
           (rem, parsed) <- runParser (stringify (charP '{') <|? whitespaceP ?|> stringify (charP '}')) i

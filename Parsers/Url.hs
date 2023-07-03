@@ -122,7 +122,7 @@ urlP = Parser f
       (lastRem, scheme) <- runParser schemeP i
       (lastRem, _) <- runParser (charP ':') lastRem
 
-      let schemeSpecificParser = case scheme of
+      let schemeSpecificP = case scheme of
             Http -> httpSchemeSpecP
             Https -> httpSchemeSpecP
             Ftp -> ftpSchemeSpecP
@@ -133,6 +133,6 @@ urlP = Parser f
             Telnet -> matchStringP "//" |> listify commInetHostInfoP <|? charP '/'
             :: Parser [UrlInfo]
 
-      (lastRem, resultUrlObj) <- runParser (wrap (Url scheme) schemeSpecificParser) lastRem
+      (lastRem, resultUrlObj) <- runParser (wrap (Url scheme) schemeSpecificP) lastRem
 
       Just (lastRem, resultUrlObj)

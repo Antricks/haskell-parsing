@@ -79,18 +79,18 @@ doubleQuotedStringP = Parser f
 stringP :: Parser String
 stringP = doubleQuotedStringP ||| singleQuotedStringP
 
-stringListParser :: Parser [String]
-stringListParser = listParser stringP
+stringListP :: Parser [String]
+stringListP = listP stringP
 
-emptyListParser :: Parser [a]
-emptyListParser = Parser f
+emptyListP :: Parser [a]
+emptyListP = Parser f
   where
     f i = do
       (rem, parsed) <- runParser (stringify (charP '[') <|? whitespaceP ?|> stringify (charP ']')) i
       Just (rem, [])
 
-listParser :: Parser a -> Parser [a] -- NOTICE: Only supports same output type parsers in list
-listParser p = emptyListParser ||| (charP '[' |> (greedify (listElemParser p) ++* p <|? whitespaceP) <| charP ']')
+listP :: Parser a -> Parser [a] -- NOTICE: Only supports same output type parsers in list
+listP p = emptyListP ||| (charP '[' |> (greedify (listElemP p) ++* p <|? whitespaceP) <| charP ']')
 
-listElemParser :: Parser a -> Parser a -- NOTICE: A trailing comma is mandatory for this parser.
-listElemParser p = (whitespaceP ?|> p <|? whitespaceP) <| charP ',' <|? whitespaceP
+listElemP :: Parser a -> Parser a -- NOTICE: A trailing comma is mandatory for this parser.
+listElemP p = (whitespaceP ?|> p <|? whitespaceP) <| charP ',' <|? whitespaceP
