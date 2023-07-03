@@ -88,7 +88,7 @@ commInetHostInfoP = Parser f
           Just (rem, Port port)
 
     f i = do
-      (rem, connInfo) <- runParser (((userP ?**? (charP ':' |> passP)) <| charP '@') ?++? (hostP ?**? (charP ':' |> portP))) i
+      (rem, connInfo) <- runParser (obligatoryListContent (((userP ?**? (charP ':' |> passP)) <| charP '@') ?++? (hostP ?**? (charP ':' |> portP)))) i
       Just (rem, Host connInfo)
 
 commInetPathInfoP :: Parser UrlInfo
