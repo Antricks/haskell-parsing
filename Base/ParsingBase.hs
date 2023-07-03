@@ -50,15 +50,15 @@ multiCharP chars = Parser f
       | y `elem` chars = Just (ys, y)
       | otherwise = Nothing
 
-stringP :: String -> Parser String -- constructs a parser accepting strictly the given string
-stringP "" = undefined
-stringP (a : "") = stringify (charP a)
-stringP (a : as) = charP a *++ stringP as
+matchStringP :: String -> Parser String -- constructs a parser accepting strictly the given string
+matchStringP "" = undefined
+matchStringP (a : "") = stringify (charP a)
+matchStringP (a : as) = charP a *++ matchStringP as
 
 caseInsStringP :: String -> Parser String
 caseInsStringP "" = undefined
 caseInsStringP (a : "") = stringify (caseInsCharP a)
-caseInsStringP (a : as) = caseInsCharP a *++ stringP as
+caseInsStringP (a : as) = caseInsCharP a *++ matchStringP as
 
 anyCharP :: Parser Char -- Just accepts one char unconditionally
 anyCharP = Parser f

@@ -56,15 +56,15 @@ telnetSchemeP :: Parser Scheme
 telnetSchemeP = caseInsStringP "telnet" ?~ Telnet
 
 -- NOTICE: I have to watch out for overlapping identifiers like "http" and "https" here. Maybe I'll find a more elegant version later. 
-schemeParser :: Parser Scheme
-schemeParser = httpsSchemeP ||| httpSchemeP ||| sftpSchemeP ||| ftpSchemeP ||| mailtoSchemeP ||| fileSchemeP ||| dataSchemeP ||| telnetSchemeP
+schemeP :: Parser Scheme
+schemeP = httpsSchemeP ||| httpSchemeP ||| sftpSchemeP ||| ftpSchemeP ||| mailtoSchemeP ||| fileSchemeP ||| dataSchemeP ||| telnetSchemeP
 
 ----------------------------------
 -- SCHEME SPECIFIC PART PARSERS --
 ----------------------------------
 
 commInetSchemeSpecP :: Parser [UrlInfo]
-commInetSchemeSpecP = stringP "//" |> commInetHostInfoP ?**? commInetPathInfoP
+commInetSchemeSpecP = matchStringP "//" |> commInetHostInfoP ?**? commInetPathInfoP
 
 commInetHostInfoP :: Parser UrlInfo
 commInetHostInfoP = Parser f
@@ -115,11 +115,11 @@ mailtoSchemeSpecP = undefined
 -- GENERAL URL PARSER --
 ------------------------
 
-urlParser :: Parser Url
-urlParser = Parser f
+urlP :: Parser Url
+urlP = Parser f
   where
     f i = do
-      (lastRem, scheme) <- runParser schemeParser i
+      (lastRem, scheme) <- runParser schemeP i
       (lastRem, _) <- runParser (charP ':') lastRem
 
       let schemeSpecificParser = case scheme of
@@ -130,7 +130,7 @@ urlParser = Parser f
             Mailto -> mailtoSchemeSpecP
             File -> commInetSchemeSpecP
             Data -> undefined
-            Telnet -> stringP "//" |> listify commInetHostInfoP <|? charP '/'
+            Telnet -> matchStringP "//" |> listify commInetHostInfoP <|? charP '/'
             :: Parser [UrlInfo]
 
       (lastRem, resultUrlObj) <- runParser (wrap (Url scheme) schemeSpecificParser) lastRem

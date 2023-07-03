@@ -8,45 +8,45 @@ data JsonObj = JsonInt Int | JsonFloat Float | JsonString String | JsonList [Jso
 
 -- I can use quite a few of parsers from misc here, I just have to wrap their output into a shared data type
 
-jsonIntParser :: Parser JsonObj
-jsonIntParser = wrap JsonInt intParser
+jsonIntP :: Parser JsonObj
+jsonIntP = wrap JsonInt intP
 
-jsonFloatParser :: Parser JsonObj
-jsonFloatParser = wrap JsonFloat floatParser
+jsonFloatP :: Parser JsonObj
+jsonFloatP = wrap JsonFloat floatP
 
-jsonStringParser :: Parser JsonObj
-jsonStringParser = wrap JsonString stringParser
+jsonStringP :: Parser JsonObj
+jsonStringP = wrap JsonString stringP
 
-jsonListParser :: Parser JsonObj
-jsonListParser = wrap JsonList $ listParser jsonObjParser
+jsonListP :: Parser JsonObj
+jsonListP = wrap JsonList $ listParser jsonObjP
 
-jsonKeyValueParser :: Parser (JsonObj, JsonObj)
-jsonKeyValueParser = Parser f
+jsonKeyValueP :: Parser (JsonObj, JsonObj)
+jsonKeyValueP = Parser f
   where
     f i = do
-      (rem_key, parsed_key) <- runParser ((jsonKeyObjParser <|? wsParser) <| charP ':' <|? wsParser) i
-      (rem_val, parsed_val) <- runParser (jsonObjParser <|? wsParser) rem_key
+      (rem_key, parsed_key) <- runParser ((jsonKeyObjP <|? whitespaceP) <| charP ':' <|? whitespaceP) i
+      (rem_val, parsed_val) <- runParser (jsonObjP <|? whitespaceP) rem_key
       Just (rem_val, (parsed_key, parsed_val))
 
-jsonDictParser :: Parser JsonObj
-jsonDictParser = Parser f
+jsonDictP :: Parser JsonObj
+jsonDictP = Parser f
   where
     f i = do
-      (rem, parsed) <- runParser dictRawParser i
+      (rem, parsed) <- runParser dictRawP i
       Just (rem, JsonDict parsed)
 
-    dictRawParser :: Parser [(JsonObj, JsonObj)]
-    dictRawParser = emptyDictParser ||| (charP '{' |> (wsParser ?|> (greedify (jsonKeyValueParser <| charP ',' <|? wsParser) ++* jsonKeyValueParser) <|? wsParser) <| charP '}')
+    dictRawP :: Parser [(JsonObj, JsonObj)]
+    dictRawP = emptyDictParser ||| (charP '{' |> (whitespaceP ?|> (greedify (jsonKeyValueP <| charP ',' <|? whitespaceP) ++* jsonKeyValueP) <|? whitespaceP) <| charP '}')
 
     emptyDictParser :: Parser [a] -- code duplication from emptyListParser in misc
     emptyDictParser = Parser f
       where
         f i = do
-          (rem, parsed) <- runParser (stringify (charP '{') <|? wsParser ?|> stringify (charP '}')) i
+          (rem, parsed) <- runParser (stringify (charP '{') <|? whitespaceP ?|> stringify (charP '}')) i
           Just (rem, [])
 
-jsonObjParser :: Parser JsonObj
-jsonObjParser = jsonFloatParser ||| jsonIntParser ||| jsonStringParser ||| jsonListParser ||| jsonDictParser
+jsonObjP :: Parser JsonObj
+jsonObjP = jsonFloatP ||| jsonIntP ||| jsonStringP ||| jsonListP ||| jsonDictP
 
-jsonKeyObjParser :: Parser JsonObj
-jsonKeyObjParser = jsonFloatParser ||| jsonIntParser ||| jsonStringParser
+jsonKeyObjP :: Parser JsonObj
+jsonKeyObjP = jsonFloatP ||| jsonIntP ||| jsonStringP
