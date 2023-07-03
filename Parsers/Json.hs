@@ -9,32 +9,16 @@ data JsonObj = JsonInt Int | JsonFloat Float | JsonString String | JsonList [Jso
 -- I can use quite a few of parsers from misc here, I just have to wrap their output into a shared data type
 
 jsonIntParser :: Parser JsonObj
-jsonIntParser = Parser f
-  where
-    f i = do
-      (rem, parsed) <- runParser intParser i
-      Just (rem, JsonInt parsed)
+jsonIntParser = wrap JsonInt intParser
 
 jsonFloatParser :: Parser JsonObj
-jsonFloatParser = Parser f
-  where
-    f i = do
-      (rem, parsed) <- runParser floatParser i
-      Just (rem, JsonFloat parsed)
+jsonFloatParser = wrap JsonFloat floatParser
 
 jsonStringParser :: Parser JsonObj
-jsonStringParser = Parser f
-  where
-    f i = do
-      (rem, parsed) <- runParser stringParser i
-      Just (rem, JsonString parsed)
+jsonStringParser = wrap JsonString stringParser
 
 jsonListParser :: Parser JsonObj
-jsonListParser = Parser f
-  where
-    f i = do
-      (rem, parsed) <- runParser (listParser jsonObjParser) i
-      Just (rem, JsonList parsed)
+jsonListParser = wrap JsonList $ listParser jsonObjParser
 
 jsonKeyValueParser :: Parser (JsonObj, JsonObj)
 jsonKeyValueParser = Parser f
