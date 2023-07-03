@@ -31,22 +31,32 @@ data ConnInfo = HostAddr String | Port Int | User String | Password String deriv
 -- SCHEME IDENTIFIER PARSERS --
 -------------------------------
 
+httpSchemeP :: Parser Scheme
 httpSchemeP = caseInsStringP "http" ?~ Http
 
+httpsSchemeP :: Parser Scheme
 httpsSchemeP = caseInsStringP "https" ?~ Https
 
+ftpSchemeP :: Parser Scheme
 ftpSchemeP = caseInsStringP "ftp" ?~ Ftp
 
+sftpSchemeP :: Parser Scheme
 sftpSchemeP = caseInsStringP "sftp" ?~ Sftp
 
+mailtoSchemeP :: Parser Scheme
 mailtoSchemeP = caseInsStringP "mailto" ?~ Mailto
 
+fileSchemeP :: Parser Scheme
 fileSchemeP = caseInsStringP "file" ?~ File
 
+dataSchemeP :: Parser Scheme
 dataSchemeP = caseInsStringP "data" ?~ Data
 
+telnetSchemeP :: Parser Scheme
 telnetSchemeP = caseInsStringP "telnet" ?~ Telnet
 
+-- NOTICE: I have to watch out for overlapping identifiers like "http" and "https" here. Maybe I'll find a more elegant version later. 
+schemeParser :: Parser Scheme
 schemeParser = httpsSchemeP ||| httpSchemeP ||| sftpSchemeP ||| ftpSchemeP ||| mailtoSchemeP ||| fileSchemeP ||| dataSchemeP ||| telnetSchemeP
 
 ----------------------------------
