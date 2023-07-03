@@ -87,11 +87,7 @@ end = Parser f
 ----------------------------------
 
 stringify :: Parser a -> Parser [a]
-stringify p = Parser f
-  where
-    f i = do
-      (rem, parsed) <- runParser p i
-      Just (rem, [parsed])
+stringify = wrap (: [])
 
 greedify :: Parser a -> Parser [a] -- NOTICE: will also return the empty list. Creates a list parser that takes in until the given parser fails. Collects outputs in a list. This also applies to Char -> [Char]::String
 greedify p = Parser f
