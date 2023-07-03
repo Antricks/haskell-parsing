@@ -159,8 +159,8 @@ p ?! a = Parser f
       out@(Just (rem, parsed)) -> out
       Nothing -> Just (i, a)
 
-(?+) :: Parser a -> b -> Parser b -- returns a default value `s` if the parser `p` succeeds
-p ?+ a = Parser f
+(?~) :: Parser a -> b -> Parser b -- returns a default value `s` if the parser `p` succeeds
+p ?~ a = Parser f
   where
     f i = do
       (rem, parsed) <- runParser p i

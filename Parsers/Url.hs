@@ -31,21 +31,21 @@ data ConnInfo = HostAddr String | Port Int | User String | Password String deriv
 -- SCHEME IDENTIFIER PARSERS --
 -------------------------------
 
-httpSchemeP = caseInsStringP "http" ?+ Http
+httpSchemeP = caseInsStringP "http" ?~ Http
 
-httpsSchemeP = caseInsStringP "https" ?+ Https
+httpsSchemeP = caseInsStringP "https" ?~ Https
 
-ftpSchemeP = caseInsStringP "ftp" ?+ Ftp
+ftpSchemeP = caseInsStringP "ftp" ?~ Ftp
 
-sftpSchemeP = caseInsStringP "sftp" ?+ Sftp
+sftpSchemeP = caseInsStringP "sftp" ?~ Sftp
 
-mailtoSchemeP = caseInsStringP "mailto" ?+ Mailto
+mailtoSchemeP = caseInsStringP "mailto" ?~ Mailto
 
-fileSchemeP = caseInsStringP "file" ?+ File
+fileSchemeP = caseInsStringP "file" ?~ File
 
-dataSchemeP = caseInsStringP "data" ?+ Data
+dataSchemeP = caseInsStringP "data" ?~ Data
 
-telnetSchemeP = caseInsStringP "telnet" ?+ Telnet
+telnetSchemeP = caseInsStringP "telnet" ?~ Telnet
 
 schemeParser = httpsSchemeP ||| httpSchemeP ||| sftpSchemeP ||| ftpSchemeP ||| mailtoSchemeP ||| fileSchemeP ||| dataSchemeP ||| telnetSchemeP
 
@@ -77,7 +77,7 @@ commInetHostInfoP = Parser f
     hostP = Parser f
       where
         f i = do
-          (rem, hostAddr) <- runParser (oblGreedify (alphaNumCharP ||| multiCharP ['.', '-'])) i -- TODO: Maybe this isn't what I actually want.
+          (rem, hostAddr) <- runParser (oblGreedify (alphaNumCharP ||| multiCharP ['.', '-'])) i -- TODO: Maybe this isn't what I actually want. For example IPv6 adresses are missing here.
           Just (rem, HostAddr hostAddr)
 
     portP :: Parser ConnInfo
