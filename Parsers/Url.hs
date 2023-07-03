@@ -69,8 +69,8 @@ commInetHostInfoP = Parser f
     hostP = wrap HostAddr (oblGreedify (alphaNumCharP ||| multiCharP ['.', '-'])) -- TODO: Maybe this isn't what I actually want. For example IPv6 adresses are missing here.
 
     portP :: Parser ConnInfo
-    portP = wrap Port posIntP
-      
+    portP = wrap Port posIntP -- NOTICE: this allows for a + before the port number. This may be unwanted
+    
     f i = do
       (rem, connInfo) <- runParser (obligatoryListContent (((userP ?**? (charP ':' |> passP)) <| charP '@') ?++? (hostP ?**? (charP ':' |> portP)))) i
       Just (rem, Host connInfo)
