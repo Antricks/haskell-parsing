@@ -89,6 +89,9 @@ end = Parser f
 stringify :: Parser a -> Parser [a]
 stringify = wrap (: [])
 
+listify :: Parser a -> Parser [a]
+listify = stringify -- Just a synonym for stringify in case I'm not actually talking about strings
+
 greedify :: Parser a -> Parser [a] -- NOTICE: will also return the empty list. Creates a list parser that takes in until the given parser fails. Collects outputs in a list. This also applies to Char -> [Char]::String
 greedify p = Parser f
   where
@@ -288,14 +291,14 @@ pa ?+*? pb = Parser f
         out_b@(Just (rem_b, parsed_b)) -> Just (rem_b, [parsed_b])
         Nothing -> Just (i, [])
 
-(++*?) :: Parser [a] -> Parser a -> Parser [a] -- like ?++ or ++? but with syntactic sugar for stringify, might reimplement some with (:) later
-pa ++*? pb = pa ++? stringify pb
+(++*?) :: Parser [a] -> Parser a -> Parser [a] -- like ?++ or ++? but with syntactic sugar for listify/stringify, might reimplement some with (:) later
+pa ++*? pb = pa ++? listify pb
 
 (*++?) :: Parser a -> Parser [a] -> Parser [a]
-pa *++? pb = stringify pa ++? pb
+pa *++? pb = listify pa ++? pb
 
 (?*++) :: Parser a -> Parser [a] -> Parser [a]
-pa ?*++ pb = stringify pa ?++ pb
+pa ?*++ pb = listify pa ?++ pb
 
 (?++*) :: Parser [a] -> Parser a -> Parser [a]
-pa ?++* pb = pa ?++ stringify pb
+pa ?++* pb = pa ?++ listify pb
