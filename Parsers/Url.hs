@@ -60,55 +60,43 @@ commInetHostInfoP :: Parser UrlInfo
 commInetHostInfoP = Parser f
   where
     userP :: Parser ConnInfo
-    userP = Parser f
-      where
-        f i = do
-          (rem, user) <- runParser alphaNumStringP i -- TODO: Maybe this isn't what I actually want.
-          Just (rem, User user)
+    userP = wrap User alphaNumStringP -- TODO: Maybe this isn't what I actually want.
 
     passP :: Parser ConnInfo
-    passP = Parser f
-      where
-        f i = do
-          (rem, pass) <- runParser (oblGreedify (notMultiCharP ['@', ':', '\n', '/'])) i -- TODO: This is very likely not what I want.
-          Just (rem, Password pass)
+    passP = wrap Password (oblGreedify (notMultiCharP ['@', ':', '\n', '/'])) -- TODO: This is very likely not what I want.
 
     hostP :: Parser ConnInfo
-    hostP = Parser f
-      where
-        f i = do
-          (rem, hostAddr) <- runParser (oblGreedify (alphaNumCharP ||| multiCharP ['.', '-'])) i -- TODO: Maybe this isn't what I actually want. For example IPv6 adresses are missing here.
-          Just (rem, HostAddr hostAddr)
+    hostP = wrap HostAddr (oblGreedify (alphaNumCharP ||| multiCharP ['.', '-'])) -- TODO: Maybe this isn't what I actually want. For example IPv6 adresses are missing here.
 
     portP :: Parser ConnInfo
-    portP = Parser f
-      where
-        f i = do
-          (rem, port) <- runParser posIntP i -- NOTICE: this allows for a '+' before the port number. Theoretically this could be unwanted.
-          Just (rem, Port port)
-
+    portP = wrap Port posIntP
+      
     f i = do
       (rem, connInfo) <- runParser (obligatoryListContent (((userP ?**? (charP ':' |> passP)) <| charP '@') ?++? (hostP ?**? (charP ':' |> portP)))) i
       Just (rem, Host connInfo)
 
 commInetPathInfoP :: Parser UrlInfo
-commInetPathInfoP = Parser f
-  where
-    f i = do
-      (rem, path) <- runParser (greedifyStr (charP '/' ?*+? alphaNumStringP ?+*? charP '/')) i -- TODO: Maybe this isn't what I actually want.
-      Just (rem, Path path)
+commInetPathInfoP = wrap Path (greedifyStr (charP '/' ?*+? alphaNumStringP ?+*? charP '/')) -- TODO: Maybe this isn't what I actually want.
 
 ftpSchemeSpecP :: Parser [UrlInfo]
 ftpSchemeSpecP = commInetSchemeSpecP
 
 httpSchemeSpecP :: Parser [UrlInfo]
-httpSchemeSpecP = commInetSchemeSpecP ++? queryP ++? fragmentP
+httpSchemeSpecP = commInetSchemeSpecP ++? queriesP ++*? fragmentP
 
-queryP :: Parser [UrlInfo]
-queryP = undefined
+queriesP :: Parser [UrlInfo]
+queriesP = (charP '?' |> queryP) ?*+? greedify (charP '&' |> queryP)
 
-fragmentP :: Parser [UrlInfo]
-fragmentP = undefined
+queryP :: Parser UrlInfo
+queryP = Parser f
+  where
+    f i = do
+      (lastRem, key) <- runParser (alphaNumStringP <| charP '=') i
+      (lastRem, val) <- runParser alphaNumStringP lastRem
+      Just (lastRem, Query (key, val))
+
+fragmentP :: Parser UrlInfo
+fragmentP = wrap Fragment (charP '#' |> alphaNumStringP)
 
 mailtoSchemeSpecP :: Parser [UrlInfo]
 mailtoSchemeSpecP = undefined
@@ -135,7 +123,6 @@ urlParser = Parser f
             Telnet -> undefined
             :: Parser [UrlInfo]
 
-      (lastRem, urlInfo) <- runParser schemeSpecificParser lastRem
-      let resultUrlObj = Url scheme urlInfo
+      (lastRem, resultUrlObj) <- runParser (wrap (Url scheme) schemeSpecificParser) lastRem
 
       Just (lastRem, resultUrlObj)
