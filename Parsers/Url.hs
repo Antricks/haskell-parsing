@@ -54,7 +54,7 @@ schemeParser = httpsSchemeP ||| httpSchemeP ||| sftpSchemeP ||| ftpSchemeP ||| m
 ----------------------------------
 
 commInetSchemeSpecP :: Parser [UrlInfo]
-commInetSchemeSpecP = stringP "//" |> stringify commInetHostInfoP ?++? stringify commInetPathInfoP
+commInetSchemeSpecP = stringP "//" |> commInetHostInfoP ?**? commInetPathInfoP
 
 commInetHostInfoP :: Parser UrlInfo
 commInetHostInfoP = Parser f
