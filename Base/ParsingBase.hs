@@ -1,8 +1,8 @@
 module Base.ParsingBase where
 
+import Data.Char qualified
 import Data.Maybe
 import Text.Read (readMaybe)
-import qualified Data.Char
 
 newtype Parser t = Parser {runParser :: String -> Maybe (String, t)}
 
@@ -57,8 +57,8 @@ stringP (a : as) = charP a *++ stringP as
 
 caseInsStringP :: String -> Parser String
 caseInsStringP "" = undefined
-caseInsStringP (a: "") = stringify (caseInsCharP a)
-caseInsStringP (a: as) = caseInsCharP a *++ stringP as
+caseInsStringP (a : "") = stringify (caseInsCharP a)
+caseInsStringP (a : as) = caseInsCharP a *++ stringP as
 
 anyCharP :: Parser Char -- Just accepts one char unconditionally
 anyCharP = Parser f
@@ -110,6 +110,7 @@ greedifyStr p = Parser f
   where
     f = f' []
       where
+        f' buf [] = Just ([], buf)
         f' buf remains
           | isNothing nextParse = Just (remains, buf) -- reverse so we can append the characters at the head of the buf string -> should improve performance for big strings
           | otherwise =
@@ -246,8 +247,8 @@ pa ?++? pb = Parser f
   where
     f i = case runParser pa i of
       out_a@(Just (rem_a, parsed_a)) -> case runParser pb rem_a of
-        Just (rem_b, parsed_b) -> Just(rem_b, parsed_a ++ parsed_b)
-        Nothing -> out_a 
+        Just (rem_b, parsed_b) -> Just (rem_b, parsed_a ++ parsed_b)
+        Nothing -> out_a
       Nothing -> case runParser pb i of
         out_b@(Just (rem_b, parsed_b)) -> out_b
         Nothing -> Just (i, [])
@@ -257,10 +258,10 @@ pa ?**? pb = Parser f
   where
     f i = case runParser pa i of
       Just (rem_a, parsed_a) -> case runParser pb rem_a of
-        Just (rem_b, parsed_b) -> Just(rem_b, [parsed_a, parsed_b])
-        Nothing -> Just(rem_a, [parsed_a])
+        Just (rem_b, parsed_b) -> Just (rem_b, [parsed_a, parsed_b])
+        Nothing -> Just (rem_a, [parsed_a])
       Nothing -> case runParser pb i of
-        Just (rem_b, parsed_b) -> Just(rem_b, [parsed_b])
+        Just (rem_b, parsed_b) -> Just (rem_b, [parsed_b])
         Nothing -> Just (i, [])
 
 (?*+?) :: Parser a -> Parser [a] -> Parser [a] -- both sides are optional and one is a single object - in case both fail an empty list is returned with the input string as remains
@@ -268,8 +269,8 @@ pa ?*+? pb = Parser f
   where
     f i = case runParser pa i of
       Just (rem_a, parsed_a) -> case runParser pb rem_a of
-        Just (rem_b, parsed_b) -> Just(rem_b, parsed_a:parsed_b)
-        Nothing -> Just(rem_a, [parsed_a])
+        Just (rem_b, parsed_b) -> Just (rem_b, parsed_a : parsed_b)
+        Nothing -> Just (rem_a, [parsed_a])
       Nothing -> case runParser pb i of
         out_b@(Just (rem_b, parsed_b)) -> out_b
         Nothing -> Just (i, [])
@@ -279,10 +280,10 @@ pa ?+*? pb = Parser f
   where
     f i = case runParser pa i of
       out_a@(Just (rem_a, parsed_a)) -> case runParser pb rem_a of
-        Just (rem_b, parsed_b) -> Just(rem_b, parsed_a ++ [parsed_b])
+        Just (rem_b, parsed_b) -> Just (rem_b, parsed_a ++ [parsed_b])
         Nothing -> out_a
       Nothing -> case runParser pb i of
-        out_b@(Just (rem_b, parsed_b)) -> Just(rem_b, [parsed_b])
+        out_b@(Just (rem_b, parsed_b)) -> Just (rem_b, [parsed_b])
         Nothing -> Just (i, [])
 
 (++?*) :: Parser [a] -> Parser a -> Parser [a] -- like ?++ or ++? but with syntactic sugar for stringify, might reimplement some with (:) later

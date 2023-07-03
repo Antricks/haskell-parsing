@@ -9,13 +9,21 @@ import Text.Read (readMaybe)
 -- Many serious parsers would probably use plenty of monadic types, for certain a lot in JSON.
 
 wsParser :: Parser String
-wsParser = oblGreedify whitespaceCharParser
+wsParser = oblGreedify whitespaceCharP
 
 intParser :: Parser Int
 intParser = Parser f
   where
     f i = do
-      (rem, parsed) <- runParser (charP '+' ?|> (charP '-' *?++ digitsParser)) i
+      (rem, parsed) <- runParser (charP '+' ?|> (charP '-' *?++ digitsP)) i
+      parsedAndRead <- readMaybe parsed :: Maybe Int
+      Just (rem, parsedAndRead)
+
+posIntP :: Parser Int
+posIntP = Parser f
+  where
+    f i = do
+      (rem, parsed) <- runParser (charP '+' ?|> digitsP) i
       parsedAndRead <- readMaybe parsed :: Maybe Int
       Just (rem, parsedAndRead)
 
@@ -28,10 +36,10 @@ floatParser = Parser f
       Just (rem, parsedAndRead)
 
     floatReadableParser :: Parser String
-    floatReadableParser = charP '+' ?|> (charP '-' *?++ (digitsParser ?! "0") +++ (charP '.' *++ digitsParser))
+    floatReadableParser = charP '+' ?|> (charP '-' *?++ (digitsP ?! "0") +++ (charP '.' *++ digitsP))
 
 doubleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string.
-doubleQuotedStringLiteralParser = 
+doubleQuotedStringLiteralParser =
   charP '"' *++ quotedStringContent '\"' ++* charP '"'
 
 singleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string.

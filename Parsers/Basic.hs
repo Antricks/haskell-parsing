@@ -2,23 +2,26 @@ module Parsers.Basic (module Parsers.Basic, module Base.ParsingBase) where
 
 import Base.ParsingBase
 
-whitespaceCharParser :: Parser Char
-whitespaceCharParser = multiCharP [' ', '\t', '\n', '\r', '\v', '\f']
+whitespaceCharP :: Parser Char
+whitespaceCharP = multiCharP [' ', '\t', '\n', '\r', '\v', '\f']
 
-minAlphaCharParser :: Parser Char
-minAlphaCharParser = multiCharP ['a' .. 'z']
+minAlphaCharP :: Parser Char
+minAlphaCharP = multiCharP ['a' .. 'z']
 
-capAlphaCharParser :: Parser Char
-capAlphaCharParser = multiCharP ['A' .. 'Z']
+capAlphaCharP :: Parser Char
+capAlphaCharP = multiCharP ['A' .. 'Z']
 
-alphaCharParser :: Parser Char
-alphaCharParser = capAlphaCharParser ||| minAlphaCharParser
+alphaCharP :: Parser Char
+alphaCharP = capAlphaCharP ||| minAlphaCharP
 
-digitCharParser :: Parser Char
-digitCharParser = multiCharP ['0' .. '9']
+digitCharP :: Parser Char
+digitCharP = multiCharP ['0' .. '9']
 
-digitsParser :: Parser String
-digitsParser = oblGreedify digitCharParser
+digitsP :: Parser String
+digitsP = oblGreedify digitCharP
 
-alphaNumCharParser :: Parser Char
-alphaNumCharParser = alphaCharParser ||| digitCharParser
+alphaNumCharP :: Parser Char
+alphaNumCharP = alphaCharP ||| digitCharP
+
+alphaNumStringP :: Parser String
+alphaNumStringP = oblGreedify alphaNumCharP

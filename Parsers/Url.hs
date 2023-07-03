@@ -17,16 +17,15 @@ module Parsers.Url (module Parsers.Url, module Base.ParsingBase) where
 
 import Base.ParsingBase
 import Parsers.Misc
+import Parsers.Basic
 
-data Scheme = Http | Https | Ftp | Sftp | Mailto | File | Data | Telnet
+data Scheme = Http | Https | Ftp | Sftp | Mailto | File | Data | Telnet deriving (Eq, Show)
 
-data Url = Url {getScheme :: Scheme, getInfo :: [UrlInfo]}
+data Url = Url {getScheme :: Scheme, getInfo :: [UrlInfo]} deriving (Eq, Show)
 
-data UrlInfo = UrlInfoHost Host | Path String | Query (String, String) | Fragment String
+data UrlInfo = Host [ConnInfo] | Path String | Query (String, String) | Fragment String deriving (Eq, Show)
 
-data Host = Host String (Maybe ConnInfo)
-
-data ConnInfo = Port (Maybe ConnInfo) | User (Maybe ConnInfo) | Password (Maybe ConnInfo)
+data ConnInfo = HostAddr String | Port Int | User String | Password String deriving (Eq, Show)
 
 -------------------------------
 -- SCHEME IDENTIFIER PARSERS --
@@ -54,14 +53,56 @@ schemeParser = httpsSchemeP ||| httpSchemeP ||| sftpSchemeP ||| ftpSchemeP ||| m
 -- SCHEME SPECIFIC PART PARSERS --
 ----------------------------------
 
-commonInternetSchemeSpecP :: Parser [UrlInfo]
-commonInternetSchemeSpecP = stringP "//" |> undefined
+commInetSchemeSpecP :: Parser [UrlInfo]
+commInetSchemeSpecP = stringP "//" |> stringify commInetHostInfoP ?++? stringify commInetPathInfoP
+
+commInetHostInfoP :: Parser UrlInfo
+commInetHostInfoP = Parser f
+  where
+    userP :: Parser ConnInfo
+    userP = Parser f
+      where
+        f i = do
+          (rem, user) <- runParser alphaNumStringP i -- TODO: Maybe this isn't what I actually want.
+          Just (rem, User user)
+
+    passP :: Parser ConnInfo
+    passP = Parser f
+      where
+        f i = do
+          (rem, pass) <- runParser (oblGreedify (notMultiCharP ['@', ':', '\n', '/'])) i -- TODO: This is very likely not what I want.
+          Just (rem, Password pass)
+
+    hostP :: Parser ConnInfo
+    hostP = Parser f
+      where
+        f i = do
+          (rem, hostAddr) <- runParser (oblGreedify (alphaNumCharP ||| multiCharP ['.', '-'])) i -- TODO: Maybe this isn't what I actually want.
+          Just (rem, HostAddr hostAddr)
+
+    portP :: Parser ConnInfo
+    portP = Parser f
+      where
+        f i = do
+          (rem, port) <- runParser posIntP i -- NOTICE: this allows for a '+' before the port number. Theoretically this could be unwanted.
+          Just (rem, Port port)
+
+    f i = do
+      (rem, connInfo) <- runParser (((userP ?**? (charP ':' |> passP)) <| charP '@') ?++? (hostP ?**? (charP ':' |> portP))) i
+      Just (rem, Host connInfo)
+
+commInetPathInfoP :: Parser UrlInfo
+commInetPathInfoP = Parser f
+  where
+    f i = do
+      (rem, path) <- runParser (greedifyStr (charP '/' ?*+? alphaNumStringP ?+*? charP '/')) i -- TODO: Maybe this isn't what I actually want.
+      Just (rem, Path path)
 
 ftpSchemeSpecP :: Parser [UrlInfo]
-ftpSchemeSpecP = commonInternetSchemeSpecP
+ftpSchemeSpecP = commInetSchemeSpecP
 
 httpSchemeSpecP :: Parser [UrlInfo]
-httpSchemeSpecP = commonInternetSchemeSpecP ++? queryP ++? fragmentP
+httpSchemeSpecP = commInetSchemeSpecP ++? queryP ++? fragmentP
 
 queryP :: Parser [UrlInfo]
 queryP = undefined
@@ -89,7 +130,7 @@ urlParser = Parser f
             Ftp -> ftpSchemeSpecP
             Sftp -> ftpSchemeSpecP
             Mailto -> mailtoSchemeSpecP
-            File -> commonInternetSchemeSpecP
+            File -> commInetSchemeSpecP
             Data -> undefined
             Telnet -> undefined
             :: Parser [UrlInfo]
