@@ -252,6 +252,39 @@ pa ?++? pb = Parser f
         out_b@(Just (rem_b, parsed_b)) -> out_b
         Nothing -> Just (i, [])
 
+(?**?) :: Parser a -> Parser a -> Parser [a] -- both sides are optional and single objects - in case both fail an empty list is returned with the input string as remains
+pa ?**? pb = Parser f
+  where
+    f i = case runParser pa i of
+      Just (rem_a, parsed_a) -> case runParser pb rem_a of
+        Just (rem_b, parsed_b) -> Just(rem_b, [parsed_a, parsed_b])
+        Nothing -> Just(rem_a, [parsed_a])
+      Nothing -> case runParser pb i of
+        Just (rem_b, parsed_b) -> Just(rem_b, [parsed_b])
+        Nothing -> Just (i, [])
+
+(?*+?) :: Parser a -> Parser [a] -> Parser [a] -- both sides are optional and one is a single object - in case both fail an empty list is returned with the input string as remains
+pa ?*+? pb = Parser f
+  where
+    f i = case runParser pa i of
+      Just (rem_a, parsed_a) -> case runParser pb rem_a of
+        Just (rem_b, parsed_b) -> Just(rem_b, parsed_a:parsed_b)
+        Nothing -> Just(rem_a, [parsed_a])
+      Nothing -> case runParser pb i of
+        out_b@(Just (rem_b, parsed_b)) -> out_b
+        Nothing -> Just (i, [])
+
+(?+*?) :: Parser [a] -> Parser a -> Parser [a] -- reverse of ?+*?
+pa ?+*? pb = Parser f
+  where
+    f i = case runParser pa i of
+      out_a@(Just (rem_a, parsed_a)) -> case runParser pb rem_a of
+        Just (rem_b, parsed_b) -> Just(rem_b, parsed_a ++ [parsed_b])
+        Nothing -> out_a
+      Nothing -> case runParser pb i of
+        out_b@(Just (rem_b, parsed_b)) -> Just(rem_b, [parsed_b])
+        Nothing -> Just (i, [])
+
 (++?*) :: Parser [a] -> Parser a -> Parser [a] -- like ?++ or ++? but with syntactic sugar for stringify, might reimplement some with (:) later
 pa ++?* pb = pa ++? stringify pb
 
