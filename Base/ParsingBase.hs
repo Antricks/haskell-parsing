@@ -288,14 +288,14 @@ pa ?+*? pb = Parser f
         out_b@(Just (rem_b, parsed_b)) -> Just (rem_b, [parsed_b])
         Nothing -> Just (i, [])
 
-(++?*) :: Parser [a] -> Parser a -> Parser [a] -- like ?++ or ++? but with syntactic sugar for stringify, might reimplement some with (:) later
-pa ++?* pb = pa ++? stringify pb
+(++*?) :: Parser [a] -> Parser a -> Parser [a] -- like ?++ or ++? but with syntactic sugar for stringify, might reimplement some with (:) later
+pa ++*? pb = pa ++? stringify pb
 
 (*++?) :: Parser a -> Parser [a] -> Parser [a]
 pa *++? pb = stringify pa ++? pb
 
-(*?++) :: Parser a -> Parser [a] -> Parser [a]
-pa *?++ pb = stringify pa ?++ pb
+(?*++) :: Parser a -> Parser [a] -> Parser [a]
+pa ?*++ pb = stringify pa ?++ pb
 
 (?++*) :: Parser [a] -> Parser a -> Parser [a]
 pa ?++* pb = pa ?++ stringify pb

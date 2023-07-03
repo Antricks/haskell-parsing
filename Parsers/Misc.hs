@@ -15,7 +15,7 @@ intParser :: Parser Int
 intParser = Parser f
   where
     f i = do
-      (rem, parsed) <- runParser (charP '+' ?|> (charP '-' *?++ digitsP)) i
+      (rem, parsed) <- runParser (charP '+' ?|> (charP '-' ?*++ digitsP)) i
       parsedAndRead <- readMaybe parsed :: Maybe Int
       Just (rem, parsedAndRead)
 
@@ -36,7 +36,7 @@ floatParser = Parser f
       Just (rem, parsedAndRead)
 
     floatReadableParser :: Parser String
-    floatReadableParser = charP '+' ?|> (charP '-' *?++ (digitsP ?! "0") +++ (charP '.' *++ digitsP))
+    floatReadableParser = charP '+' ?|> (charP '-' ?*++ (digitsP ?! "0") +++ (charP '.' *++ digitsP))
 
 doubleQuotedStringLiteralParser :: Parser String -- NOTICE: just takes in raw input string resembling a string.
 doubleQuotedStringLiteralParser =
