@@ -130,7 +130,7 @@ urlParser = Parser f
             Mailto -> mailtoSchemeSpecP
             File -> commInetSchemeSpecP
             Data -> undefined
-            Telnet -> undefined
+            Telnet -> stringP "//" |> listify commInetHostInfoP <|? charP '/'
             :: Parser [UrlInfo]
 
       (lastRem, resultUrlObj) <- runParser (wrap (Url scheme) schemeSpecificParser) lastRem
