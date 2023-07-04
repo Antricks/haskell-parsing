@@ -1,27 +1,28 @@
 module Parsers.Basic (module Parsers.Basic, module Base.ParsingBase) where
 
+import Base.CharSets
 import Base.ParsingBase
 
 whitespaceCharP :: Parser Char
-whitespaceCharP = multiCharP [' ', '\t', '\n', '\r', '\v', '\f']
+whitespaceCharP = multiCharP whitespaceCS
 
 minAlphaCharP :: Parser Char
-minAlphaCharP = multiCharP ['a' .. 'z']
+minAlphaCharP = multiCharP minAlphaCS
 
-capAlphaCharP :: Parser Char
-capAlphaCharP = multiCharP ['A' .. 'Z']
+majAlphaCharP :: Parser Char
+majAlphaCharP = multiCharP majAlphaCS
 
 alphaCharP :: Parser Char
-alphaCharP = capAlphaCharP ||| minAlphaCharP
+alphaCharP = multiCharP alphaCS
 
 digitCharP :: Parser Char
-digitCharP = multiCharP ['0' .. '9']
+digitCharP = multiCharP digitCS
+
+alphaNumCharP :: Parser Char
+alphaNumCharP = multiCharP alphaNumCS
 
 digitsP :: Parser String
 digitsP = oblGreedify digitCharP
-
-alphaNumCharP :: Parser Char
-alphaNumCharP = alphaCharP ||| digitCharP
 
 alphaNumStringP :: Parser String
 alphaNumStringP = oblGreedify alphaNumCharP

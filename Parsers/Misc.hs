@@ -20,10 +20,13 @@ intP = Parser f
       Just (rem, parsedAndRead)
 
 posIntP :: Parser Int
-posIntP = Parser f
+posIntP = charP '+' ?|> unsignedIntP 
+
+unsignedIntP :: Parser Int
+unsignedIntP = Parser f
   where
     f i = do
-      (rem, parsed) <- runParser (charP '+' ?|> digitsP) i
+      (rem, parsed) <- runParser digitsP i
       parsedAndRead <- readMaybe parsed :: Maybe Int
       Just (rem, parsedAndRead)
 

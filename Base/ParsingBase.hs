@@ -1,5 +1,6 @@
-module Base.ParsingBase where
+module Base.ParsingBase (module Base.ParsingBase, module Base.CharSets) where
 
+import Base.CharSets
 import Data.Char qualified
 import Data.Maybe
 import Text.Read (readMaybe)
@@ -50,6 +51,9 @@ multiCharP chars = Parser f
       | y `elem` chars = Just (ys, y)
       | otherwise = Nothing
 
+multiCharStringP :: [Char] -> Parser String
+multiCharStringP = oblGreedify . multiCharP
+
 matchStringP :: String -> Parser String -- constructs a parser accepting strictly the given string
 matchStringP "" = undefined
 matchStringP (a : "") = stringify (charP a)
@@ -82,9 +86,9 @@ end = Parser f
     f "" = Just ("", ())
     f _ = Nothing
 
-----------------------------------
--- UNITARY OPERATORS ON PARSERS --
-----------------------------------
+---------------------------
+-- PARSER TRANSFORMATORS --
+---------------------------
 
 stringify :: Parser a -> Parser [a]
 stringify = wrap (: [])
@@ -144,6 +148,19 @@ wrap t p = Parser f
     f i = do
       (rem, parsed) <- runParser p i
       Just (rem, t parsed)
+
+condition :: (a -> Bool) -> Parser a -> Parser a
+condition predicate parser = Parser f
+  where
+    f i = do
+      out@(rem, parsed) <- runParser parser i
+      if predicate parsed
+        then Just out
+        else Nothing
+
+between :: Ord a => a -> a -> Parser a -> Parser a
+between a b = condition (\x -> a <= x && x <= b) 
+
 ------------------------
 -- PARSER COMBINATORS --
 ------------------------

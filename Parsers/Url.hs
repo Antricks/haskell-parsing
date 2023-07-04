@@ -18,14 +18,42 @@ module Parsers.Url (module Parsers.Url, module Base.ParsingBase) where
 import Base.ParsingBase
 import Parsers.Misc
 import Parsers.Basic
+import Parsers.BasicInternet
 
 data Scheme = Http | Https | Ftp | Sftp | Mailto | File | Data | Telnet deriving (Eq, Show)
 
 data Url = Url {getScheme :: Scheme, getInfo :: [UrlInfo]} deriving (Eq, Show)
 
-data UrlInfo = Host [ConnInfo] | Path String | Query (String, String) | Fragment String deriving (Eq, Show)
+data UrlInfo = Host [ConnInfo] | Path String | Query (String, String) | Fragment String | Email String deriving (Eq, Show)
 
-data ConnInfo = HostAddr String | Port Int | User String | Password String deriving (Eq, Show)
+data ConnInfo = HostLocation HostAddr | Port Int | User String | Password String deriving (Eq, Show) -- maybe I'll merge this into UrlInfo later...
+
+data HostAddr = DomainName String | Ipv4 String | Ipv6 String deriving (Eq, Show)
+
+getHost :: [UrlInfo] -> Maybe UrlInfo
+getHost [] = Nothing
+getHost (r@(Host _):urlInfo) = Just r
+getHost (_:urlInfo) = getHost urlInfo
+
+getPath :: [UrlInfo] -> Maybe UrlInfo
+getPath [] = Nothing
+getPath (r@(Path _):urlInfo) = Just r
+getPath (_:urlInfo) = getPath urlInfo
+
+getQuery :: [UrlInfo] -> Maybe UrlInfo
+getQuery [] = Nothing
+getQuery (r@(Query _):urlInfo) = Just r 
+getQuery (_:urlInfo) = getQuery urlInfo
+
+getFragment :: [UrlInfo] -> Maybe UrlInfo
+getFragment [] = Nothing
+getFragment (r@(Fragment _):urlInfo) = Just r
+getFragment (_:urlInfo) = getFragment urlInfo
+
+getEmail :: [UrlInfo] -> Maybe UrlInfo
+getEmail [] = Nothing
+getEmail (r@(Email _):urlInfo) = Just r
+getEmail (_:urlInfo) = getEmail urlInfo
 
 -------------------------------
 -- SCHEME IDENTIFIER PARSERS --
@@ -70,16 +98,16 @@ commInetHostInfoP :: Parser UrlInfo
 commInetHostInfoP = Parser f
   where
     userP :: Parser ConnInfo
-    userP = wrap User alphaNumStringP -- TODO: Maybe this isn't what I actually want.
+    userP = wrap User (oblGreedify (notMultiCharP ['@', ':', '\n', '/'])) -- TODO: Maybe this isn't what I actually want.
 
     passP :: Parser ConnInfo
     passP = wrap Password (oblGreedify (notMultiCharP ['@', ':', '\n', '/'])) -- TODO: This is very likely not what I want.
 
     hostP :: Parser ConnInfo
-    hostP = wrap HostAddr (oblGreedify (alphaNumCharP ||| multiCharP ['.', '-'])) -- TODO: Maybe this isn't what I actually want. For example IPv6 adresses are missing here.
+    hostP = wrap HostLocation (wrap DomainName domainNameP ||| wrap Ipv4 ipv4AddrP) -- TODO: support IPv6
 
     portP :: Parser ConnInfo
-    portP = wrap Port posIntP -- NOTICE: this allows for a + before the port number. This may be unwanted
+    portP = wrap Port (between 0 (2^16-1) unsignedIntP)
     
     f i = do
       (rem, connInfo) <- runParser (obligatoryListContent (((userP ?**? (charP ':' |> passP)) <| charP '@') ?++? (hostP ?**? (charP ':' |> portP)))) i
@@ -109,13 +137,13 @@ fragmentP :: Parser UrlInfo
 fragmentP = wrap Fragment (charP '#' |> alphaNumStringP)
 
 mailtoSchemeSpecP :: Parser [UrlInfo]
-mailtoSchemeSpecP = undefined
+mailtoSchemeSpecP = listify (wrap Email emailAddrP)
 
 ------------------------
 -- GENERAL URL PARSER --
 ------------------------
 
-urlP :: Parser Url
+urlP :: Parser Url -- TODO support URL encoding 
 urlP = Parser f
   where
     f i = do
