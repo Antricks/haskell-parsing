@@ -98,10 +98,10 @@ commInetHostInfoP :: Parser UrlInfo
 commInetHostInfoP = Parser f
   where
     userP :: Parser ConnInfo
-    userP = wrap User (oblGreedify (notMultiCharP ['@', ':', '\n', '/'])) -- TODO: Maybe this isn't what I actually want.
+    userP = wrap User (oblGreedify (notMultiCharP ['@', ':', '\n', '/'])) -- TODO? Maybe this isn't what I actually want.
 
     passP :: Parser ConnInfo
-    passP = wrap Password (oblGreedify (notMultiCharP ['@', ':', '\n', '/'])) -- TODO: This is very likely not what I want.
+    passP = wrap Password (oblGreedify (notMultiCharP ['@', ':', '\n', '/'])) -- TODO? This is very likely not what I want.
 
     hostP :: Parser ConnInfo
     hostP = wrap HostLocation (wrap DomainName domainNameP ||| wrap Ipv4 ipv4AddrP) -- TODO: support IPv6

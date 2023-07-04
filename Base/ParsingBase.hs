@@ -119,7 +119,7 @@ greedifyStr p = Parser f
           | otherwise =
               let Just (newRemains, parsedChar) = nextParse in f' (buf ++ parsedChar) newRemains
           where
-            nextParse = runParser (obligatoryListContent p) remains -- TODO: check if obligatoryListContent is actually what I want here
+            nextParse = runParser (obligatoryListContent p) remains
 
 obligatoryListContent :: Parser [a] -> Parser [a] -- makes a parser fail when returning an empty list / the empty string
 obligatoryListContent p = Parser f
