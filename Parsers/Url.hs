@@ -92,7 +92,7 @@ schemeP = httpsSchemeP ||| httpSchemeP ||| sftpSchemeP ||| ftpSchemeP ||| mailto
 ----------------------------------
 
 commInetSchemeSpecP :: Parser [UrlInfo]
-commInetSchemeSpecP = matchStringP "//" |> commInetHostInfoP ?**? commInetPathInfoP
+commInetSchemeSpecP = matchStringP "//" |> (commInetHostInfoP ?**? commInetPathInfoP)
 
 commInetHostInfoP :: Parser UrlInfo
 commInetHostInfoP = Parser f
@@ -143,7 +143,7 @@ mailtoSchemeSpecP = listify (wrap Email emailAddrP)
 -- GENERAL URL PARSER --
 ------------------------
 
-urlP :: Parser Url -- TODO support URL encoding 
+urlP :: Parser Url -- TODO support URL encoding
 urlP = Parser f
   where
     f i = do
@@ -157,7 +157,7 @@ urlP = Parser f
             Sftp -> ftpSchemeSpecP
             Mailto -> mailtoSchemeSpecP
             File -> commInetSchemeSpecP
-            Data -> undefined
+            Data -> undefined -- TODO implement?
             Telnet -> matchStringP "//" |> listify commInetHostInfoP <|? charP '/'
             :: Parser [UrlInfo]
 
